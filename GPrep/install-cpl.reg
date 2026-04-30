@@ -1,0 +1,8 @@
+Windows Registry Editor Version 5.00
+
+; Register GPrep.cpl in Control Panel
+; Edit the path below to match your installation directory
+; Then double-click this .reg file to add GPrep to Control Panel
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Control Panel\Cpls]
+"GPrep.cpl"="C:\\Program Files\\GPrep\\GPrep.cpl"

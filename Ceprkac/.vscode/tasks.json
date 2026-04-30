@@ -1,0 +1,39 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Restore NuGet Packages",
+      "type": "shell",
+      "command": "dotnet restore Ceprkac.csproj",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "problemMatcher": ["$msCompile"]
+    },
+    {
+      "label": "Build Debug",
+      "type": "shell",
+      "command": "dotnet build Ceprkac.csproj -c Debug",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": ["$msCompile"]
+    },
+    {
+      "label": "Publish Release",
+      "type": "shell",
+      "command": "dotnet publish Ceprkac.csproj -c Release -r win-x64 --self-contained true -o bin\\Release\\net48\\win-x64\\publish",
+      "group": "build",
+      "problemMatcher": ["$msCompile"]
+    },
+    {
+      "label": "Build Installer",
+      "type": "shell",
+      "command": "build.bat",
+      "group": "build",
+      "problemMatcher": ["$msCompile"]
+    }
+  ]
+}

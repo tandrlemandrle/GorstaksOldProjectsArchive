@@ -1,0 +1,72 @@
+# ═══════════════════════════════════════════════════════════════
+# AUTO-START - Check if we need to install first
+# ═══════════════════════════════════════════════════════════════
+$Script:IntervalMinutes = 5
+$Script:InstallDir = 'C:\ProgramData\Antivirus'
+$Script:SelfPath = $PSCommandPath
+$Script:InstalledMarker = Join-Path $Script:InstallDir 'installed.txt'
+
+# Check if we're running from install location
+$IsRunningFromInstall = $Script:SelfPath -eq (Join-Path $Script:InstallDir 'GorstaksEDR.ps1')
+
+if (-not $IsRunningFromInstall -and -not (Test-Path $InstalledMarker)) {
+    
+    # Create install directory
+    if (-not (Test-Path $Script:InstallDir)) {
+        New-Item -ItemType Directory -Path $Script:InstallDir -Force | Out-Null
+    }
+    
+    # Copy self to install location
+    $DestPath = Join-Path $Script:InstallDir 'GorstaksEDR.ps1'
+    Copy-Item -Path $Script:SelfPath -Destination $DestPath -Force
+    
+    # Create marker file
+    "Installed at $(Get-Date)" | Out-File $InstalledMarker -Encoding UTF8
+    
+    # Create subdirectories
+    foreach ($sub in @('Logs', 'Quarantine', 'Alerts', 'vpn')) {
+        $p = Join-Path $Script:InstallDir $sub
+        if (-not (Test-Path $p)) { New-Item -ItemType Directory -Path $p -Force | Out-Null }
+    }
+    
+    # Add Defender exclusion
+    try {
+        Add-MpPreference -ExclusionPath $Script:InstallDir -ErrorAction SilentlyContinue
+    } catch { }
+    
+    # Get current user for scheduled task
+    $CurrentUser = $null
+    try { $CurrentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name } catch {}
+    if (-not $CurrentUser) { $CurrentUser = "$env:USERDOMAIN\$env:USERNAME" }
+
+    # Register persistence via ScheduledTask cmdlets; fall back to schtasks.exe
+    $TaskName = 'GorstaksEDR'
+    $TaskCmd  = "powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$DestPath`""
+
+    # Attempt 1: PowerShell ScheduledTask cmdlets (preferred)
+    $taskRegistered = $false
+    try {
+        Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false -EA SilentlyContinue
+        $action    = New-ScheduledTaskAction -Execute 'powershell.exe' `
+                        -Argument "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$DestPath`""
+        $trigger   = New-ScheduledTaskTrigger -AtLogOn -User $CurrentUser
+        $principal = New-ScheduledTaskPrincipal -UserId $CurrentUser -LogonType Interactive -RunLevel Highest
+        $settings  = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
+                        -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Seconds 0)
+        Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger `
+            -Principal $principal -Settings $settings -Force -ErrorAction Stop | Out-Null
+        $taskRegistered = $true
+    }
+
+    # Attempt 2: schtasks.exe fallback
+    if (-not $taskRegistered) {
+        try {
+            schtasks.exe /Delete /TN $TaskName /F 2>$null | Out-Null
+            schtasks.exe /Create /TN $TaskName /TR $TaskCmd /SC ONLOGON /RL HIGHEST /F 2>$null | Out-Null
+            if ($LASTEXITCODE -eq 0) {
+                $taskRegistered = $true
+                Write-Host "[GorstaksEDR] Scheduled task registered (schtasks.exe)" -ForegroundColor Green
+            }
+        } catch { }
+    }
+}

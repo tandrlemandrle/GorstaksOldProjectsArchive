@@ -1,0 +1,51 @@
+[
+    {
+        "Name": "CustomCobaltStrike",
+        "Description": "Detects Cobalt Strike beacon indicators",
+        "Category": "C2",
+        "Severity": "Critical",
+        "Score": 90,
+        "StringPatterns": [
+            "beacon\\.dll",
+            "cobaltstrike",
+            "sleeptime",
+            "\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00",
+            "%COMSPEC%",
+            "IEX.*downloadstring.*http"
+        ],
+        "Condition": "any"
+    },
+    {
+        "Name": "CustomPowerSploit",
+        "Description": "Detects PowerSploit framework usage",
+        "Category": "Execution",
+        "Severity": "High",
+        "Score": 75,
+        "StringPatterns": [
+            "invoke-shellcode",
+            "invoke-reflectivepeinjection",
+            "invoke-dllinjection",
+            "invoke-tokenmanipulation",
+            "invoke-credentialinjection",
+            "get-gpppassword",
+            "invoke-kerberoast"
+        ],
+        "Condition": "any"
+    },
+    {
+        "Name": "CustomSharpTools",
+        "Description": "Detects common C# offensive tools",
+        "Category": "Execution",
+        "Severity": "High",
+        "Score": 70,
+        "StringPatterns": [
+            "sharphound",
+            "rubeus",
+            "seatbelt",
+            "sharpup",
+            "certify",
+            "whisker"
+        ],
+        "Condition": "any"
+    }
+]

@@ -1,0 +1,35 @@
+# Build outputs
+bin/
+obj/
+publish/
+Output/
+
+# Release artifacts (keep structure, ignore large files)
+releases/**/*.exe
+releases/**/*.msi
+releases/**/*.zip
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# Rider / IntelliJ
+.idea/
+*.iml
+
+# NuGet
+*.nupkg
+packages/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+~$*

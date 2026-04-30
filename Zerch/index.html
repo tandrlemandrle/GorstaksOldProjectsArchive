@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zerch – Private Search</title>
+    <meta name="description" content="Search the web with AI overviews. Free, no account required.">
+    <style>
+        :root {
+            --bg: #f0f2f5;
+            --surface: #fff;
+            --text: #1c1e21;
+            --text-muted: #65676b;
+            --border: #e4e6eb;
+            --accent: #0056b3;
+            --accent-dark: #003d82;
+            --header-bg: linear-gradient(135deg, #0056b3 0%, #003d82 100%);
+            --ai-bg: linear-gradient(135deg, #e8f4fc 0%, #f0f7ff 100%);
+            --ai-border: #b8d4e8;
+            --error-bg: #fff0f0;
+            --error-border: #fcc;
+            --success-bg: #f0fff0;
+            --success-border: #d4f1d4;
+        }
+        [data-theme="dark"] {
+            --bg: #18191a;
+            --surface: #242526;
+            --text: #e4e6eb;
+            --text-muted: #b0b3b8;
+            --border: #3e4042;
+            --accent: #5b9bd5;
+            --accent-dark: #7ab8f0;
+            --header-bg: linear-gradient(135deg, #1a3a52 0%, #0d2137 100%);
+            --ai-bg: linear-gradient(135deg, #1e3a5f 0%, #152238 100%);
+            --ai-border: #2d4a6e;
+            --error-bg: #3d2020;
+            --error-border: #5c2d2d;
+            --success-bg: #203d20;
+            --success-border: #4d7d4d;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg);
+            color: var(--text);
+            transition: background-color 0.2s, color 0.2s;
+        }
+        header {
+            background: var(--header-bg);
+            color: white;
+            padding: 0.75rem 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        header h1 { margin: 0; font-size: 1.5rem; font-weight: 600; }
+        .theme-btn {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.4);
+            color: white;
+            padding: 0.35rem 0.6rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        .theme-btn:hover { background: rgba(255,255,255,0.3); }
+        .search-wrap {
+            position: relative;
+            max-width: 520px;
+            margin: 0 auto;
+        }
+        form {
+            text-align: center;
+            margin: 1.5rem 0;
+            padding: 0 1rem;
+        }
+        .input-row { display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; }
+        input[type="text"] {
+            padding: 0.65rem 1rem;
+            font-size: 1rem;
+            width: 100%;
+            max-width: 380px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            outline: none;
+            transition: border-color 0.2s;
+            background: var(--surface);
+            color: var(--text);
+        }
+        input[type="text"]:focus {
+            border-color: var(--accent);
+        }
+        button[type="submit"] {
+            padding: 0.65rem 1.25rem;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+            color: white;
+            font-size: 1rem;
+            font-weight: 500;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: filter 0.2s;
+        }
+        button[type="submit"]:hover { filter: brightness(1.1); }
+        button[type="submit"]:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+        .autocomplete {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            top: 100%;
+            width: 100%;
+            max-width: 380px;
+            margin-top: 2px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            max-height: 240px;
+            overflow-y: auto;
+            z-index: 100;
+            display: none;
+        }
+        .autocomplete.visible { display: block; }
+        .autocomplete section { padding: 0.35rem 0; }
+        .autocomplete .section-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            padding: 0.25rem 0.75rem;
+        }
+        .autocomplete button {
+            width: 100%;
+            text-align: left;
+            padding: 0.5rem 0.75rem;
+            border: none;
+            background: none;
+            color: var(--text);
+            cursor: pointer;
+            font-size: 0.95rem;
+        }
+        .autocomplete button:hover, .autocomplete button.selected {
+            background: var(--bg);
+        }
+        .recent-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            justify-content: center;
+            margin-top: 0.75rem;
+            padding: 0 1rem;
+        }
+        .recent-pills button {
+            padding: 0.3rem 0.6rem;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+        .recent-pills button:hover {
+            color: var(--accent);
+            border-color: var(--accent);
+        }
+        #loading {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-muted);
+        }
+        #loading .spinner {
+            display: inline-block;
+            width: 32px;
+            height: 32px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 0.5rem;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        #results {
+            padding: 1rem 1.5rem 2rem;
+            max-width: 720px;
+            margin: 0 auto;
+            text-align: left;
+        }
+        .welcome {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 2rem 1rem;
+            font-size: 0.95rem;
+        }
+        .ai-overview {
+            background: var(--ai-bg);
+            border: 1px solid var(--ai-border);
+            border-radius: 12px;
+            padding: 1.25rem 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .ai-overview h2 {
+            margin: 0 0 0.5rem 0;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--accent-dark);
+        }
+        .ai-overview .content {
+            font-size: 0.95rem;
+            line-height: 1.5;
+            color: var(--text);
+        }
+        .ai-overview .content.loading { color: var(--text-muted); font-style: italic; }
+        .ai-overview .content.error { color: #c55; }
+        .result-item {
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 0;
+            font-size: 1rem;
+            display: flex;
+            gap: 0.75rem;
+            align-items: flex-start;
+        }
+        .result-item .favicon {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+        .result-item .body { min-width: 0; }
+        .result-item h3 { margin: 0; font-size: 1.1rem; font-weight: 600; }
+        .result-item a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+        .result-item a:hover { text-decoration: underline; }
+        .result-item p {
+            margin: 0.35rem 0 0 0;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+        .result-item small { font-size: 0.8rem; color: var(--text-muted); }
+        .more-results {
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem 1rem;
+            align-items: center;
+        }
+        .more-results .label { color: var(--text-muted); font-size: 0.9rem; }
+        .more-results a { color: var(--accent); text-decoration: none; }
+        .more-results a:hover { text-decoration: underline; }
+        .share-wrap { margin-top: 0.75rem; }
+        .share-wrap button {
+            padding: 0.35rem 0.6rem;
+            font-size: 0.85rem;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--text-muted);
+            cursor: pointer;
+        }
+        .share-wrap button:hover { color: var(--accent); }
+        .error-message {
+            background: var(--error-bg);
+            border: 1px solid var(--error-border);
+            border-radius: 8px;
+            padding: 1rem;
+            color: #c55;
+            margin: 1rem 0;
+        }
+        .success-message {
+            background: var(--success-bg);
+            border: 1px solid var(--success-border);
+            border-radius: 8px;
+            padding: 1rem;
+            color: #3a8;
+            margin: 1rem 0;
+        }
+        .filters-toggle {
+            text-align: center;
+            margin: 0.5rem 0;
+        }
+        .filters-toggle button {
+            padding: 0.35rem 0.8rem;
+            font-size: 0.85rem;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--accent);
+            cursor: pointer;
+        }
+        .filters-toggle button:hover { background: var(--bg); }
+        #filters-panel {
+            display: none;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+            max-width: 720px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        #filters-panel.visible { display: block; }
+        .filter-group {
+            margin-bottom: 1rem;
+        }
+        .filter-group label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 0.4rem;
+            color: var(--text);
+        }
+        .filter-group select, .filter-group input {
+            width: 100%;
+            padding: 0.4rem 0.6rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 0.9rem;
+        }
+        .filter-buttons {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+        .filter-buttons button {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.85rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--surface);
+            color: var(--text);
+            cursor: pointer;
+        }
+        .filter-buttons button:hover { background: var(--bg); }
+        .filter-buttons .clear-btn { color: #c55; }
+        .source-badges {
+            display: flex;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+            margin-top: 0.4rem;
+            margin-bottom: 1rem;
+            justify-content: center;
+        }
+        .source-badge {
+            display: inline-block;
+            padding: 0.25rem 0.6rem;
+            font-size: 0.75rem;
+            border-radius: 12px;
+            background: var(--bg);
+            color: var(--text-muted);
+            border: 1px solid var(--border);
+        }
+        .source-badge.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+        .history-panel {
+            max-width: 720px;
+            margin: 1rem auto;
+            padding: 1rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            display: none;
+        }
+        .history-panel.visible { display: block; }
+        .history-panel h3 { margin: 0 0 0.8rem 0; }
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .history-item {
+            padding: 0.5rem 0.8rem;
+            background: var(--bg);
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+        .history-item button {
+            padding: 0.2rem 0.5rem;
+            background: none;
+            border: none;
+            color: var(--accent);
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        .result-item .source-list {
+            display: inline-flex;
+            gap: 0.3rem;
+            margin-left: 0.5rem;
+            font-size: 0.75rem;
+        }
+        .result-item .source-tag {
+            background: var(--bg);
+            padding: 0.1rem 0.3rem;
+            border-radius: 3px;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Zerch</h1>
+        <button type="button" class="theme-btn" id="theme-btn" aria-label="Toggle dark mode">Dark</button>
+    </header>
+
+    <form id="search-form">
+        <div class="search-wrap">
+            <div class="input-row">
+                <input type="text" id="search-query" placeholder="Search the web..." autocomplete="off" aria-label="Search query" aria-autocomplete="list" aria-controls="autocomplete">
+                <button type="submit" id="submit-btn">Search</button>
+            </div>
+            <div id="autocomplete" class="autocomplete" role="listbox"></div>
+        </div>
+        <div id="recent-pills" class="recent-pills"></div>
+        <div class="source-badges" id="source-badges"></div>
+        <div class="filters-toggle"><button type="button" id="filters-toggle-btn">⚙️ Filters</button></div>
+        <div id="filters-panel">
+            <div class="filter-group">
+                <label>Time</label>
+                <select id="filter-time">
+                    <option value="">Anytime</option>
+                    <option value="day">Past 24 hours</option>
+                    <option value="week">Past week</option>
+                    <option value="month">Past month</option>
+                    <option value="year">Past year</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Domain (optional)</label>
+                <input type="text" id="filter-domain" placeholder="e.g., github.com">
+            </div>
+            <div class="filter-group">
+                <label>Language</label>
+                <select id="filter-language">
+                    <option value="">All languages</option>
+                    <option value="en">English</option>
+                    <option value="es">Spanish</option>
+                    <option value="fr">French</option>
+                    <option value="de">German</option>
+                </select>
+            </div>
+            <div class="filter-buttons">
+                <button type="button" id="apply-filters-btn">Apply</button>
+                <button type="button" id="clear-filters-btn" class="clear-btn">Clear</button>
+            </div>
+        </div>
+    </form>
+
+    <div id="loading" style="display: none;"></div>
+    
+    <div class="history-panel" id="history-panel">
+        <h3>Search History</h3>
+        <div class="history-list" id="history-list"></div>
+        <div style="text-align: center; margin-top: 0.8rem;">
+            <button type="button" id="clear-history-btn" style="padding: 0.3rem 0.6rem; background: none; border: 1px solid var(--border); border-radius: 4px; color: #c55; cursor: pointer; font-size: 0.8rem;">Clear all</button>
+        </div>
+    </div>
+    
+    <div id="results">
+        <p class="welcome">Search for anything. Powered by free sources: DuckDuckGo, Wikipedia, and more. Results include AI overviews powered by free models.</p>
+    </div>
+
+    <script type="module">
+        const RECENT_MAX = 12;
+        const RECENT_KEY = 'zerch_recent';
+        const HISTORY_KEY = 'zerch_history';
+        const THEME_KEY = 'zerch_theme';
+        const CACHE_KEY = 'zerch_cache';
+        const CACHE_TTL = 3600000; // 1 hour
+
+        const searchForm = document.getElementById('search-form');
+        const searchInput = document.getElementById('search-query');
+        const submitBtn = document.getElementById('submit-btn');
+        const loadingEl = document.getElementById('loading');
+        const resultsEl = document.getElementById('results');
+        const autocompleteEl = document.getElementById('autocomplete');
+        const recentPillsEl = document.getElementById('recent-pills');
+        const themeBtn = document.getElementById('theme-btn');
+        const filtersToggleBtn = document.getElementById('filters-toggle-btn');
+        const filtersPanelEl = document.getElementById('filters-panel');
+        const applyFiltersBtn = document.getElementById('apply-filters-btn');
+        const clearFiltersBtn = document.getElementById('clear-filters-btn');
+        const historyPanelEl = document.getElementById('history-panel');
+        const clearHistoryBtn = document.getElementById('clear-history-btn');
+
+        let currentFilters = { time: '', domain: '', language: '' };
+        let activeSources = { ddg: true, wikipedia: true };
+
+        function escapeHtml(text) {
+            if (text == null) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // CACHE MANAGEMENT
+        function getCache(key) {
+            try {
+                const raw = localStorage.getItem(CACHE_KEY);
+                const cache = raw ? JSON.parse(raw) : {};
+                const entry = cache[key];
+                if (!entry) return null;
+                if (Date.now() - entry.time > CACHE_TTL) {
+                    delete cache[key];
+                    localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
+                    return null;
+                }
+                return entry.data;
+            } catch { return null; }
+        }
+        function setCache(key, data) {
+            try {
+                const raw = localStorage.getItem(CACHE_KEY);
+                const cache = raw ? JSON.parse(raw) : {};
+                cache[key] = { data, time: Date.now() };
+                localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
+            } catch {}
+        }
+
+        // SEARCH HISTORY
+        function getHistory() {
+            try {
+                const raw = localStorage.getItem(HISTORY_KEY);
+                return raw ? JSON.parse(raw) : [];
+            } catch { return []; }
+        }
+        function pushHistory(query) {
+            const q = query.trim();
+            if (!q) return;
+            const history = getHistory().filter(x => x.query !== q);
+            history.unshift({ query: q, time: Date.now() });
+            try { localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, 50))); } catch {}
+            renderHistoryPanel();
+        }
+        function clearHistory() {
+            try { localStorage.removeItem(HISTORY_KEY); } catch {}
+            renderHistoryPanel();
+        }
+        function renderHistoryPanel() {
+            const history = getHistory();
+            const list = document.getElementById('history-list');
+            list.innerHTML = '';
+            if (history.length === 0) {
+                list.innerHTML = '<p style="color: var(--text-muted); font-size: 0.9rem;">No history yet</p>';
+                return;
+            }
+            history.slice(0, 20).forEach(h => {
+                const item = document.createElement('div');
+                item.className = 'history-item';
+                const time = new Date(h.time).toLocaleDateString();
+                item.innerHTML = `
+                    <span>${escapeHtml(h.query)} <small style="color: var(--text-muted);">${time}</small></span>
+                    <button type="button">Search</button>
+                `;
+                item.querySelector('button').addEventListener('click', () => {
+                    searchInput.value = h.query;
+                    runSearch(h.query);
+                    historyPanelEl.classList.remove('visible');
+                });
+                list.appendChild(item);
+            });
+        }
+
+        // RECENT SEARCHES
+        function getRecent() {
+            try {
+                const raw = localStorage.getItem(RECENT_KEY);
+                return raw ? JSON.parse(raw) : [];
+            } catch { return []; }
+        }
+        function pushRecent(query) {
+            const q = query.trim();
+            if (!q) return;
+            let arr = getRecent().filter(x => x !== q);
+            arr.unshift(q);
+            arr = arr.slice(0, RECENT_MAX);
+            try { localStorage.setItem(RECENT_KEY, JSON.stringify(arr)); } catch {}
+            renderRecentPills();
+        }
+        function renderRecentPills() {
+            const recent = getRecent();
+            recentPillsEl.innerHTML = '';
+            if (recent.length === 0) return;
+            recent.forEach(q => {
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.textContent = q;
+                b.addEventListener('click', () => { searchInput.value = q; runSearch(q); });
+                recentPillsEl.appendChild(b);
+            });
+        }
+
+        // SOURCE BADGES
+        function renderSourceBadges() {
+            const container = document.getElementById('source-badges');
+            container.innerHTML = '';
+            ['ddg', 'wikipedia'].forEach(src => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'source-badge ' + (activeSources[src] ? 'active' : '');
+                btn.textContent = src === 'ddg' ? 'DuckDuckGo' : 'Wikipedia';
+                btn.addEventListener('click', () => {
+                    activeSources[src] = !activeSources[src];
+                    renderSourceBadges();
+                });
+                container.appendChild(btn);
+            });
+        }
+
+        // THEME
+        function getTheme() {
+            try { return localStorage.getItem(THEME_KEY) || 'light'; } catch { return 'light'; }
+        }
+        function setTheme(theme) {
+            document.body.dataset.theme = theme === 'dark' ? 'dark' : '';
+            try { localStorage.setItem(THEME_KEY, theme); } catch {}
+            themeBtn.textContent = theme === 'dark' ? 'Light' : 'Dark';
+        }
+        themeBtn.addEventListener('click', () => {
+            setTheme(getTheme() === 'dark' ? 'light' : 'dark');
+        });
+        setTheme(getTheme());
+
+        // FILTERS
+        filtersToggleBtn.addEventListener('click', () => {
+            filtersPanelEl.classList.toggle('visible');
+        });
+        applyFiltersBtn.addEventListener('click', () => {
+            currentFilters = {
+                time: document.getElementById('filter-time').value,
+                domain: document.getElementById('filter-domain').value.trim(),
+                language: document.getElementById('filter-language').value
+            };
+            filtersPanelEl.classList.remove('visible');
+            if (searchInput.value.trim()) {
+                runSearch(searchInput.value.trim());
+            }
+        });
+        clearFiltersBtn.addEventListener('click', () => {
+            currentFilters = { time: '', domain: '', language: '' };
+            document.getElementById('filter-time').value = '';
+            document.getElementById('filter-domain').value = '';
+            document.getElementById('filter-language').value = '';
+            filtersPanelEl.classList.remove('visible');
+        });
+
+        // HISTORY PANEL
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'h') {
+                e.preventDefault();
+                historyPanelEl.classList.toggle('visible');
+            }
+        });
+        clearHistoryBtn.addEventListener('click', () => {
+            if (confirm('Clear all search history?')) clearHistory();
+        });
+
+        function setLoading(show, message = 'Searching...') {
+            loadingEl.style.display = show ? 'block' : 'none';
+            loadingEl.innerHTML = show
+                ? `<div class="spinner"></div><p>${escapeHtml(message)}</p>`
+                : '';
+            submitBtn.disabled = show;
+        }
+
+        function showError(message) {
+            resultsEl.innerHTML = `<div class="error-message">${escapeHtml(message)}</div>`;
+        }
+
+        let acSelected = -1;
+        function showAutocomplete(items) {
+            autocompleteEl.innerHTML = '';
+            acSelected = -1;
+            if (items.length === 0) {
+                autocompleteEl.classList.remove('visible');
+                return;
+            }
+            const sec = document.createElement('section');
+            items.forEach((item, i) => {
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.textContent = item;
+                b.role = 'option';
+                b.id = 'ac-' + i;
+                b.addEventListener('click', () => { searchInput.value = item; autocompleteEl.classList.remove('visible'); runSearch(item); });
+                sec.appendChild(b);
+            });
+            autocompleteEl.appendChild(sec);
+            autocompleteEl.classList.add('visible');
+        }
+
+        async function getAutocompleteSuggestions(query) {
+            if (!query) {
+                const recent = getRecent().slice(0, 8);
+                return recent.map(q => ({ text: q, type: 'recent' }));
+            }
+            const q = query.toLowerCase();
+            const recent = getRecent().filter(r => r.toLowerCase().includes(q)).slice(0, 4);
+            const items = [...recent];
+
+            // Wikipedia suggestions
+            try {
+                const url = `https://en.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(query)}&limit=3&format=json`;
+                const res = await fetch(url);
+                const data = await res.json();
+                if (data[3]) {
+                    items.push(...data[1].slice(0, 3));
+                }
+            } catch {}
+
+            return items.slice(0, 8);
+        }
+
+        searchInput.addEventListener('input', async () => {
+            const q = searchInput.value.trim();
+            const suggestions = await getAutocompleteSuggestions(q);
+            showAutocomplete(suggestions);
+        });
+        searchInput.addEventListener('focus', async () => {
+            const q = searchInput.value.trim();
+            const suggestions = await getAutocompleteSuggestions(q);
+            if (suggestions.length) showAutocomplete(suggestions);
+        });
+        searchInput.addEventListener('blur', () => {
+            setTimeout(() => autocompleteEl.classList.remove('visible'), 150);
+        });
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') { autocompleteEl.classList.remove('visible'); return; }
+            if (e.key === 'Enter') return;
+            const opts = autocompleteEl.querySelectorAll('[role="option"]');
+            if (opts.length === 0) return;
+            if (e.key === 'ArrowDown') { e.preventDefault(); acSelected = Math.min(acSelected + 1, opts.length - 1); opts.forEach((o, i) => o.classList.toggle('selected', i === acSelected)); opts[acSelected]?.scrollIntoView({ block: 'nearest' }); return; }
+            if (e.key === 'ArrowUp') { e.preventDefault(); acSelected = Math.max(acSelected - 1, -1); opts.forEach((o, i) => o.classList.toggle('selected', i === acSelected)); return; }
+        });
+
+        // ENHANCED SEARCH FUNCTIONS
+        async function fetchDuckDuckGoResults(query) {
+            const cacheKey = 'ddg_' + query;
+            const cached = getCache(cacheKey);
+            if (cached) return cached;
+
+            try {
+                const url = `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_redirect=1&d=1`;
+                const res = await fetch(url);
+                if (!res.ok) throw new Error('DuckDuckGo request failed');
+                const data = await res.json();
+                const results = [];
+
+                // Better parsing: Abstract first
+                if (data.AbstractText && data.AbstractURL) {
+                    results.push({
+                        title: data.Heading || query,
+                        url: data.AbstractURL,
+                        snippet: data.AbstractText,
+                        source: 'DuckDuckGo'
+                    });
+                }
+
+                // Related Topics
+                (data.RelatedTopics || []).slice(0, 8).forEach(item => {
+                    if (item.FirstURL && item.Text) {
+                        results.push({
+                            title: item.Text.split('-')[0].trim(),
+                            url: item.FirstURL,
+                            snippet: item.Text,
+                            source: 'DuckDuckGo'
+                        });
+                    }
+                });
+
+                setCache(cacheKey, results);
+                return results;
+            } catch (e) {
+                console.warn('DuckDuckGo error:', e);
+                return [];
+            }
+        }
+
+        async function fetchWikipediaResults(query) {
+            const cacheKey = 'wiki_' + query;
+            const cached = getCache(cacheKey);
+            if (cached) return cached;
+
+            try {
+                const url = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&srwhat=text&srprop=snippet&srlimit=5&format=json`;
+                const res = await fetch(url);
+                if (!res.ok) throw new Error('Wikipedia request failed');
+                const data = await res.json();
+                const results = [];
+
+                (data.query?.search || []).forEach(item => {
+                    results.push({
+                        title: item.title,
+                        url: `https://en.wikipedia.org/wiki/${encodeURIComponent(item.title)}`,
+                        snippet: item.snippet.replace(/<[^>]*>/g, ''),
+                        source: 'Wikipedia'
+                    });
+                });
+
+                setCache(cacheKey, results);
+                return results;
+            } catch (e) {
+                console.warn('Wikipedia error:', e);
+                return [];
+            }
+        }
+
+        function faviconUrl(url) {
+            try {
+                const host = new URL(url).hostname;
+                return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=32`;
+            } catch { return ''; }
+        }
+
+        // AI OVERVIEWS - Multiple free providers
+        async function getAIOverview(query, results) {
+            try {
+                const snippets = results.slice(0, 5).map(r => r.snippet).join('\n\n');
+                const prompt = `You are a search assistant. Based on the following search results for "${query}", write a concise overview (2–3 sentences). Be accurate, neutral, and don't invent facts.\n\nResults:\n${snippets}`;
+
+                // Try HuggingFace free inference first
+                try {
+                    const res = await fetch('https://api-inference.huggingface.co/models/mistral-community/Mistral-7B-Instruct-v0.2', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            inputs: prompt,
+                            parameters: { max_new_tokens: 150 }
+                        })
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data[0]?.generated_text) {
+                            return data[0].generated_text.replace(prompt, '').trim();
+                        }
+                    }
+                } catch {}
+
+                // Fallback: Enhanced local summary
+                const words = snippets.split(/\s+/);
+                const summary = words.slice(0, 40).join(' ') + (words.length > 40 ? '...' : '');
+                return summary || 'Summary generated from search results.';
+            } catch (e) {
+                console.warn('AI overview error:', e);
+                return null;
+            }
+        }
+
+        function renderAIOverview(container, content, state) {
+            const div = document.createElement('div');
+            div.className = 'ai-overview';
+            const h2 = document.createElement('h2');
+            h2.textContent = 'Overview';
+            div.appendChild(h2);
+            const body = document.createElement('div');
+            body.className = 'content';
+            if (state === 'loading') { body.classList.add('loading'); body.textContent = 'Generating overview...'; }
+            else if (state === 'error' || !content) { body.classList.add('error'); body.textContent = content || 'Overview unavailable.'; }
+            else body.textContent = content;
+            div.appendChild(body);
+            container.appendChild(div);
+        }
+
+        function buildSearchUrls(query) {
+            const enc = encodeURIComponent(query);
+            return {
+                yahoo: `https://search.yahoo.com/search?p=${enc}`,
+                google: `https://www.google.com/search?q=${enc}`,
+                bing: `https://www.bing.com/search?q=${enc}`,
+                duckduckgo: `https://duckduckgo.com/?q=${enc}`
+            };
+        }
+
+        async function displayResults(results, query, urls) {
+            resultsEl.innerHTML = '';
+            pushRecent(query);
+            pushHistory(query);
+            updateUrl(query);
+
+            const fragment = document.createDocumentFragment();
+            const aiContainer = document.createElement('div');
+            aiContainer.id = 'ai-overview-container';
+            renderAIOverview(aiContainer, null, 'loading');
+            fragment.appendChild(aiContainer);
+
+            if (results.length === 0) {
+                const p = document.createElement('p');
+                p.textContent = 'No results found. Try different keywords or use the links below.';
+                fragment.appendChild(p);
+            } else {
+                results.slice(0, 20).forEach(r => {
+                    const item = document.createElement('div');
+                    item.className = 'result-item';
+                    const fav = faviconUrl(r.url);
+                    item.innerHTML = `
+                        ${fav ? `<img class="favicon" src="${escapeHtml(fav)}" alt="" width="20" height="20" loading="lazy">` : ''}
+                        <div class="body">
+                            <h3><a href="${escapeHtml(r.url)}" target="_blank" rel="noopener">${escapeHtml(r.title)}</a></h3>
+                            <p>${escapeHtml(r.snippet)}</p>
+                            <small>Source: ${escapeHtml(r.source)}</small>
+                        </div>
+                    `;
+                    fragment.appendChild(item);
+                });
+            }
+
+            const more = document.createElement('div');
+            more.className = 'more-results';
+            more.innerHTML = `
+                <span class="label">Search on:</span>
+                <a href="${escapeHtml(urls.google)}" target="_blank" rel="noopener">Google</a>
+                <a href="${escapeHtml(urls.bing)}" target="_blank" rel="noopener">Bing</a>
+                <a href="${escapeHtml(urls.duckduckgo)}" target="_blank" rel="noopener">DuckDuckGo</a>
+                <a href="${escapeHtml(urls.yahoo)}" target="_blank" rel="noopener">Yahoo</a>
+            `;
+            fragment.appendChild(more);
+
+            const shareWrap = document.createElement('div');
+            shareWrap.className = 'share-wrap';
+            const shareBtn = document.createElement('button');
+            shareBtn.type = 'button';
+            shareBtn.textContent = 'Copy search link';
+            shareBtn.addEventListener('click', () => {
+                const url = new URL(window.location.href);
+                url.searchParams.set('q', query);
+                navigator.clipboard.writeText(url.toString()).then(() => { shareBtn.textContent = 'Copied!'; setTimeout(() => { shareBtn.textContent = 'Copy search link'; }, 2000); });
+            });
+            shareWrap.appendChild(shareBtn);
+            fragment.appendChild(shareWrap);
+
+            resultsEl.appendChild(fragment);
+
+            getAIOverview(query, results).then(content => {
+                const container = document.getElementById('ai-overview-container');
+                if (!container) return;
+                container.innerHTML = '';
+                renderAIOverview(container, content, content ? 'done' : 'error');
+            });
+        }
+
+        function updateUrl(query) {
+            const url = new URL(window.location.href);
+            if (query) url.searchParams.set('q', query);
+            else url.searchParams.delete('q');
+            if (url.toString() !== window.location.href) window.history.replaceState({}, '', url);
+        }
+        function readUrlQuery() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('q') || '';
+        }
+
+        async function runSearch(query) {
+            const q = query.trim();
+            if (!q) return;
+            setLoading(true, 'Searching...');
+            resultsEl.innerHTML = '';
+            autocompleteEl.classList.remove('visible');
+
+            try {
+                let allResults = [];
+
+                if (activeSources.ddg) {
+                    const ddgResults = await fetchDuckDuckGoResults(q);
+                    allResults.push(...ddgResults);
+                }
+
+                if (activeSources.wikipedia) {
+                    const wikiResults = await fetchWikipediaResults(q);
+                    allResults.push(...wikiResults);
+                }
+
+                // Deduplicate by URL
+                const seen = new Set();
+                allResults = allResults.filter(r => {
+                    if (seen.has(r.url)) return false;
+                    seen.add(r.url);
+                    return true;
+                });
+
+                setLoading(false);
+                displayResults(allResults, q, buildSearchUrls(q));
+            } catch (err) {
+                setLoading(false);
+                showError('Search failed. Please check your connection and try again.');
+                console.error(err);
+            }
+        }
+
+        searchForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const opts = autocompleteEl.querySelectorAll('[role="option"]');
+            if (autocompleteEl.classList.contains('visible') && opts[acSelected]) {
+                const q = opts[acSelected].textContent.trim();
+                searchInput.value = q;
+                autocompleteEl.classList.remove('visible');
+                runSearch(q);
+                return;
+            }
+            const query = searchInput.value.trim();
+            if (!query) { searchInput.focus(); return; }
+            runSearch(query);
+        });
+
+        if (readUrlQuery()) {
+            const q = readUrlQuery();
+            searchInput.value = q;
+            runSearch(q);
+        }
+
+        renderRecentPills();
+        renderSourceBadges();
+        renderHistoryPanel();
+    </script>
+</body>
+</html>

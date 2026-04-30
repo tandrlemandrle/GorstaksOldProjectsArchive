@@ -1,0 +1,52 @@
+{
+  // ── Threat Scoring Thresholds ──
+  // Adjust these to tune sensitivity for your environment
+  "autoKillThreshold": 80,
+  "autoQuarantineThreshold": 70,
+  "autoBlockThreshold": 60,
+  "alertThreshold": 40,
+
+  // ── Response Toggles ──
+  "autoKillThreats": true,
+  "autoQuarantine": true,
+
+  // ── Database ──
+  "maxDatabaseEntries": 50000,
+  "databaseCleanupDays": 30,
+  "cymruDetectionThreshold": 60,
+
+  // ── Logging ──
+  // Enable structured JSON logging for SIEM ingestion
+  "jsonLogging": true,
+
+  // ── Scan Exclusions (paths that are never scanned) ──
+  "exclusionPaths": [
+    "C:\\MyApp\\bin",
+    "D:\\Development"
+  ],
+
+  // ── Allowlisted Hashes (SHA256, never flagged) ──
+  "allowlistHashes": [
+  ],
+
+  // ── Allowlisted Paths (files/folders, never flagged) ──
+  "allowlistPaths": [
+    "C:\\Program Files\\MyTrustedApp"
+  ],
+
+  // ── Allowlisted Signers (certificate CN substrings) ──
+  "allowlistSigners": [
+    "My Company Inc"
+  ],
+
+  // ── Additional Protected Processes ──
+  "additionalProtectedProcesses": [
+    "myservice",
+    "myapp"
+  ],
+
+  // ── Additional YARA Rule Directories ──
+  "extraRulePaths": [
+    "D:\\yara-rules\\community"
+  ]
+}

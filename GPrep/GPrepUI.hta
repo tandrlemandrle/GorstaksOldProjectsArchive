@@ -1,0 +1,200 @@
+<html>
+<head>
+<title>GPrep - System Software Installer</title>
+<HTA:APPLICATION
+  ID="GPrep"
+  APPLICATIONNAME="GPrep"
+  BORDER="thin"
+  BORDERSTYLE="normal"
+  CAPTION="yes"
+  ICON="shell32.dll,21"
+  MAXIMIZEBUTTON="no"
+  SHOWINTASKBAR="yes"
+  SINGLEINSTANCE="yes"
+  SYSMENU="yes"
+  WINDOWSTATE="normal"
+  SCROLL="auto"
+  INNERBORDER="yes"
+/>
+<style>
+  body { font-family: 'Segoe UI', Tahoma, Arial; font-size: 11px; margin: 12px; background: #f0f0f0; }
+  h1 { font-size: 16px; margin: 0 0 12px 0; color: #1a1a1a; }
+  .tabs { margin-bottom: 12px; }
+  .tab { display: inline-block; padding: 8px 16px; margin-right: 4px; background: #ddd; cursor: pointer; border-radius: 4px; }
+  .tab.active { background: #0078d4; color: white; }
+  .tab:hover:not(.active) { background: #ccc; }
+  .panel { display: none; padding: 12px; background: white; border: 1px solid #ccc; border-radius: 4px; max-height: 320px; overflow-y: auto; }
+  .panel.active { display: block; }
+  .section { margin-bottom: 16px; }
+  .section h3 { font-size: 12px; margin: 0 0 8px 0; color: #333; }
+  .app-row { padding: 4px 0; }
+  .app-row input { margin-right: 8px; vertical-align: middle; }
+  .buttons { margin-top: 16px; }
+  .btn { padding: 8px 24px; font-size: 12px; cursor: pointer; border: none; border-radius: 4px; }
+  .btn-primary { background: #0078d4; color: white; }
+  .btn-primary:hover { background: #106ebe; }
+  .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
+  .status { margin-top: 12px; padding: 8px; background: #e8f4fc; border-radius: 4px; font-size: 10px; }
+  .legacy-note { background: #fff3cd; padding: 8px; margin-bottom: 12px; border-radius: 4px; font-size: 10px; }
+</style>
+</head>
+<body>
+<h1>GPrep - System Software Installer</h1>
+<div id="legacyNote" class="legacy-note" style="display:none;">
+  <strong>Legacy mode:</strong> You are on Windows 7/8. Only apps with Legacy support are shown. Modern browsers (Firefox ESR, Vivaldi 5.6, Opera 95) and utilities are available.
+</div>
+<div class="tabs">
+  <span class="tab active" id="tabModern" onclick="switchTab('modern')">Modern (Win10/11)</span>
+  <span class="tab" id="tabLegacy" onclick="switchTab('legacy')">Legacy (Win7/8)</span>
+</div>
+<div id="modernPanel" class="panel active">
+  <div id="modernContent">Loading...</div>
+</div>
+<div id="legacyPanel" class="panel">
+  <div id="legacyContent">Loading...</div>
+</div>
+<div class="buttons">
+  <button class="btn btn-primary" id="btnInstall" onclick="runInstall()">Install Selected</button>
+</div>
+<div id="status" class="status"></div>
+
+<script type="text/vbscript">
+Dim baseDir
+
+Sub Window_OnLoad
+  baseDir = GetBaseDir()
+  LoadManifest
+End Sub
+
+Function GetBaseDir
+  Dim path
+  path = document.location.pathname
+  If Mid(path, 1, 1) = "/" Then path = Mid(path, 2)
+  path = Replace(path, "/", "\")
+  GetBaseDir = Replace(path, "\GPrepUI.hta", "")
+  If Right(GetBaseDir, 12) = "\GPrepUI.hta" Then GetBaseDir = Left(GetBaseDir, Len(GetBaseDir) - 12)
+End Function
+
+Sub LoadManifest
+  Dim shell, ps, result, fso, f, line
+  Set shell = CreateObject("WScript.Shell")
+  Set fso = CreateObject("Scripting.FileSystemObject")
+  
+  ' Use PowerShell to read manifest and output app lists
+  ps = "powershell -NoProfile -ExecutionPolicy Bypass -Command ""$m = Get-Content '" & Replace(baseDir, "'", "''") & "\manifest.json' -Raw | ConvertFrom-Json; " & _
+    "$v = [version](Get-WmiObject Win32_OperatingSystem).Version; $legacy = ($v.Major -lt 10); " & _
+    "$modern = ($m.apps | Where-Object { $_.modern }) | ForEach-Object { $_.id + '|' + $_.name + '|' + $_.category }; " & _
+    "$legacyApps = ($m.apps | Where-Object { $_.legacy }) | ForEach-Object { $_.id + '|' + $_.name + '|' + $_.category }; " & _
+    "Write-Output ('LEGACY:' + $legacy); " & _
+    "Write-Output ('MODERN:' + ($modern -join ';;')); " & _
+    "Write-Output ('APPS:' + ($legacyApps -join ';;'))"""
+  
+  On Error Resume Next
+  Set exec = shell.Exec(ps)
+  Do While exec.Status = 0
+    WScript.Sleep 100
+  Loop
+  result = exec.StdOut.ReadAll
+  If Err.Number <> 0 Or result = "" Then
+    document.getElementById("modernContent").innerHTML = "Error loading manifest. Ensure manifest.json exists and PowerShell is available."
+    document.getElementById("legacyContent").innerHTML = ""
+    Exit Sub
+  End If
+  
+  Dim lines, isLegacy, modernList, legacyList, i
+  lines = Split(result, vbCrLf)
+  isLegacy = False
+  modernList = ""
+  legacyList = ""
+  For i = 0 To UBound(lines)
+    line = Trim(lines(i))
+    If Left(line, 7) = "LEGACY:" Then isLegacy = (Mid(line, 8) = "True")
+    If Left(line, 7) = "MODERN:" Then modernList = Mid(line, 8)
+    If Left(line, 5) = "APPS:" Then legacyList = Mid(line, 6)
+  Next
+  
+  RenderApps "modernContent", modernList, "modern"
+  RenderApps "legacyContent", legacyList, "legacy"
+  
+  If isLegacy Then
+    document.getElementById("legacyNote").style.display = "block"
+    switchTab "legacy"
+  End If
+End Sub
+
+Sub RenderApps(containerId, appList, panelName)
+  Dim container, apps, app, parts, id, name, cat, html, currentCat
+  Set container = document.getElementById(containerId)
+  
+  If appList = "" Then
+    container.innerHTML = "<em>No applications in this category.</em>"
+    Exit Sub
+  End If
+  
+  html = ""
+  currentCat = ""
+  apps = Split(appList, ";;")
+  
+  For Each app In apps
+    app = Trim(app)
+    If app <> "" Then
+      parts = Split(app, "|")
+      If UBound(parts) >= 2 Then
+        id = Trim(parts(0))
+        name = Trim(parts(1))
+        cat = Trim(parts(2))
+        If cat <> currentCat Then
+          If currentCat <> "" Then html = html & "</div>"
+          html = html & "<div class='section'><h3>" & cat & "</h3>"
+          currentCat = cat
+        End If
+        html = html & "<div class='app-row'><input type='checkbox' id='chk_" & panelName & "_" & id & "' data-id='" & id & "'><label for='chk_" & panelName & "_" & id & "'>" & name & "</label></div>"
+      End If
+    End If
+  Next
+  If currentCat <> "" Then html = html & "</div>"
+  
+  container.innerHTML = html
+End Sub
+
+Sub switchTab(name)
+  document.getElementById("modernPanel").className = "panel"
+  document.getElementById("legacyPanel").className = "panel"
+  document.getElementById("tabModern").className = "tab"
+  document.getElementById("tabLegacy").className = "tab"
+  If name = "modern" Then
+    document.getElementById("modernPanel").className = "panel active"
+    document.getElementById("tabModern").className = "tab active"
+  Else
+    document.getElementById("legacyPanel").className = "panel active"
+    document.getElementById("tabLegacy").className = "tab active"
+  End If
+End Sub
+
+Sub runInstall
+  Dim ids, chks, i, shell, ps
+  ids = ""
+  Set chks = document.querySelectorAll("input[type=checkbox]:checked")
+  For i = 0 To chks.length - 1
+    If ids <> "" Then ids = ids & ","
+    ids = ids & chks(i).getAttribute("data-id")
+  Next
+  
+  If ids = "" Then
+    document.getElementById("status").innerHTML = "Please select at least one application."
+    Exit Sub
+  End If
+  
+  document.getElementById("status").innerHTML = "Launching installer (admin elevation may be requested)..."
+  document.getElementById("btnInstall").disabled = True
+  
+  Set shell = CreateObject("WScript.Shell")
+  ps = "powershell -NoProfile -ExecutionPolicy Bypass -File """ & baseDir & "\GPrepHelper.ps1"" -AppIds """ & ids & """"
+  shell.Run ps, 1, False
+  
+  document.getElementById("status").innerHTML = "Installer started. Check the PowerShell window for progress."
+  document.getElementById("btnInstall").disabled = False
+End Sub
+</script>
+</body>
+</html>

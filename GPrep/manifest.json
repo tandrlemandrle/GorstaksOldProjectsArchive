@@ -1,0 +1,734 @@
+{
+  "description": "GPrep software manifest - defines installable apps for Modern (Win10+) and Legacy (Win7/8) sections",
+  "categories": [
+    "Browsers",
+    "Utilities",
+    "Media",
+    "Development",
+    "Gaming",
+    "Security",
+    "Office",
+    "System",
+    "Other"
+  ],
+  "apps": [
+    {
+      "id": "firefox",
+      "name": "Mozilla Firefox",
+      "category": "Browsers",
+      "modern": { "winget": "Mozilla.Firefox" },
+      "legacy": {
+        "url": "https://download.mozilla.org/?product=firefox-esr-latest-ssl&os=win64&lang=en-US",
+        "filename": "Firefox_ESR_Setup.exe"
+      }
+    },
+    {
+      "id": "chrome",
+      "name": "Google Chrome",
+      "category": "Browsers",
+      "modern": { "winget": "Google.Chrome" },
+      "legacy": {
+        "url": "https://dl.google.com/chrome/install/latest/chrome_installer.exe",
+        "filename": "ChromeSetup.exe",
+        "note": "Chrome 109 was last Win7"
+      }
+    },
+    {
+      "id": "vivaldi",
+      "name": "Vivaldi",
+      "category": "Browsers",
+      "modern": { "winget": "Vivaldi.Vivaldi" },
+      "legacy": {
+        "url": "https://downloads.vivaldi.com/stable/5.6.2867.62/Vivaldi.5.6.2867.62.x64.exe",
+        "filename": "Vivaldi_5.6_Win7.exe"
+      }
+    },
+    {
+      "id": "mypal",
+      "name": "Mypal (Firefox for Win7/Vista)",
+      "category": "Browsers",
+      "modern": null,
+      "legacy": {
+        "url": "https://github.com/Feodor2/Mypal68/releases/download/68.14.0/mypal-68.14.0.en-US.win64.installer.exe",
+        "filename": "Mypal_Setup.exe"
+      }
+    },
+    {
+      "id": "opera",
+      "name": "Opera Browser",
+      "category": "Browsers",
+      "modern": { "winget": "Opera.Opera" },
+      "legacy": {
+        "url": "https://get.geo.opera.com/pub/opera/desktop/95.0.4635.90/win/Opera_95.0.4635.90_Setup_x64.exe",
+        "filename": "Opera_95_Win7.exe"
+      }
+    },
+    {
+      "id": "opera-gx",
+      "name": "Opera GX",
+      "category": "Browsers",
+      "modern": { "winget": "Opera.OperaGX" },
+      "legacy": null
+    },
+    {
+      "id": "brave",
+      "name": "Brave Browser",
+      "category": "Browsers",
+      "modern": { "winget": "Brave.Brave" },
+      "legacy": null
+    },
+    {
+      "id": "edge",
+      "name": "Microsoft Edge",
+      "category": "Browsers",
+      "modern": { "winget": "Microsoft.Edge" },
+      "legacy": null
+    },
+    {
+      "id": "arc",
+      "name": "Arc Browser",
+      "category": "Browsers",
+      "modern": { "winget": "TheBrowserCompany.Arc" },
+      "legacy": null
+    },
+    {
+      "id": "tor",
+      "name": "Tor Browser",
+      "category": "Browsers",
+      "modern": { "winget": "TorProject.TorBrowser" },
+      "legacy": {
+        "url": "https://www.torproject.org/dist/torbrowser/13.5.6/tor-browser-windows-x86_64-portable-13.5.6_en-US.exe",
+        "filename": "Tor_Browser.exe"
+      }
+    },
+    {
+      "id": "librewolf",
+      "name": "LibreWolf",
+      "category": "Browsers",
+      "modern": { "winget": "LibreWolf.LibreWolf" },
+      "legacy": null
+    },
+    {
+      "id": "7zip",
+      "name": "7-Zip",
+      "category": "Utilities",
+      "modern": { "winget": "7zip.7zip" },
+      "legacy": {
+        "url": "https://www.7-zip.org/a/7z2408-x64.exe",
+        "filename": "7z2408-x64.exe"
+      }
+    },
+    {
+      "id": "winrar",
+      "name": "WinRAR",
+      "category": "Utilities",
+      "modern": { "winget": "RARLab.WinRAR" },
+      "legacy": {
+        "url": "https://www.rarlab.com/rar/winrar-x64-624.exe",
+        "filename": "WinRAR-x64.exe"
+      }
+    },
+    {
+      "id": "peazip",
+      "name": "PeaZip",
+      "category": "Utilities",
+      "modern": { "winget": "PeaZip.PeaZip" },
+      "legacy": {
+        "url": "https://github.com/peazip/PeaZip/releases/download/9.7.0/peazip-9.7.0.WIN64.exe",
+        "filename": "PeaZip_Setup.exe"
+      }
+    },
+    {
+      "id": "notepadpp",
+      "name": "Notepad++",
+      "category": "Utilities",
+      "modern": { "winget": "Notepad++.Notepad++" },
+      "legacy": {
+        "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/releases/download/v8.6.2/npp.8.6.2.Installer.x64.exe",
+        "filename": "Notepad++_Setup.exe"
+      }
+    },
+    {
+      "id": "everything",
+      "name": "Everything Search",
+      "category": "Utilities",
+      "modern": { "choco": "Everything" },
+      "legacy": {
+        "url": "https://www.voidtools.com/Everything-1.4.1.1026.x64.zip",
+        "filename": "Everything.zip",
+        "isZip": true
+      }
+    },
+    {
+      "id": "windirstat",
+      "name": "WinDirStat",
+      "category": "Utilities",
+      "modern": { "winget": "WinDirStat.WinDirStat" },
+      "legacy": {
+        "url": "https://sourceforge.net/projects/windirstat/files/windirstat/1.1.2/windirstat1_1_2_setup.exe",
+        "filename": "WinDirStat_Setup.exe"
+      }
+    },
+    {
+      "id": "treesize",
+      "name": "TreeSize Free",
+      "category": "Utilities",
+      "modern": { "winget": "JAMSoftware.TreeSize.Free" },
+      "legacy": null
+    },
+    {
+      "id": "winmerge",
+      "name": "WinMerge",
+      "category": "Utilities",
+      "modern": { "winget": "WinMerge.WinMerge" },
+      "legacy": {
+        "url": "https://github.com/WinMerge/winmerge/releases/download/v2.16.36/WinMerge-2.16.36-x64-exe.zip",
+        "filename": "WinMerge.zip",
+        "isZip": true
+      }
+    },
+    {
+      "id": "sharex",
+      "name": "ShareX",
+      "category": "Utilities",
+      "modern": { "winget": "ShareX.ShareX" },
+      "legacy": {
+        "url": "https://github.com/ShareX/ShareX/releases/download/v15.0.0/ShareX-15.0.0-setup.exe",
+        "filename": "ShareX_Setup.exe"
+      }
+    },
+    {
+      "id": "putty",
+      "name": "PuTTY",
+      "category": "Utilities",
+      "modern": { "winget": "PuTTY.PuTTY" },
+      "legacy": {
+        "url": "https://the.earth.li/~sgtatham/putty/latest/w64/putty-64bit-0.81-installer.msi",
+        "filename": "PuTTY_Setup.msi"
+      }
+    },
+    {
+      "id": "winscp",
+      "name": "WinSCP",
+      "category": "Utilities",
+      "modern": { "winget": "WinSCP.WinSCP" },
+      "legacy": {
+        "url": "https://winscp.net/download/WinSCP-6.1.2-Setup.exe",
+        "filename": "WinSCP_Setup.exe"
+      }
+    },
+    {
+      "id": "keepassxc",
+      "name": "KeePassXC",
+      "category": "Utilities",
+      "modern": { "winget": "KeePassXCTeam.KeePassXC" },
+      "legacy": {
+        "url": "https://github.com/keepassxreboot/keepassxc/releases/download/2.7.6/KeePassXC-2.7.6-Win64.zip",
+        "filename": "KeePassXC.zip",
+        "isZip": true
+      }
+    },
+    {
+      "id": "bulkcrapuninstaller",
+      "name": "Bulk Crap Uninstaller",
+      "category": "Utilities",
+      "modern": { "winget": "Klocman.BulkCrapUninstaller" },
+      "legacy": null
+    },
+    {
+      "id": "revo-uninstaller",
+      "name": "Revo Uninstaller",
+      "category": "Utilities",
+      "modern": { "winget": "RevoUninstaller.RevoUninstaller" },
+      "legacy": null
+    },
+    {
+      "id": "vlc",
+      "name": "VLC Media Player",
+      "category": "Media",
+      "modern": { "winget": "VideoLAN.VLC" },
+      "legacy": {
+        "url": "https://get.videolan.org/vlc/3.0.20/win64/vlc-3.0.20-win64.exe",
+        "filename": "VLC_Setup.exe"
+      }
+    },
+    {
+      "id": "mpv",
+      "name": "MPV Player",
+      "category": "Media",
+      "modern": { "winget": "mpv.net.mpv" },
+      "legacy": null
+    },
+    {
+      "id": "foobar2000",
+      "name": "foobar2000",
+      "category": "Media",
+      "modern": { "winget": "PeterPawlowski.foobar2000" },
+      "legacy": {
+        "url": "https://www.foobar2000.org/files/foobar2000_v2.1.2_x64.exe",
+        "filename": "foobar2000_Setup.exe"
+      }
+    },
+    {
+      "id": "audacity",
+      "name": "Audacity",
+      "category": "Media",
+      "modern": { "winget": "Audacity.Audacity" },
+      "legacy": {
+        "url": "https://github.com/audacity/audacity/releases/download/Audacity-3.4.2/audacity-win-3.4.2-64bit.exe",
+        "filename": "Audacity_Setup.exe"
+      }
+    },
+    {
+      "id": "gimp",
+      "name": "GIMP",
+      "category": "Media",
+      "modern": { "winget": "GIMP.GIMP" },
+      "legacy": {
+        "url": "https://download.gimp.org/gimp/v2.10/windows/gimp-2.10.34-x86_64.exe",
+        "filename": "GIMP_Setup.exe"
+      }
+    },
+    {
+      "id": "krita",
+      "name": "Krita",
+      "category": "Media",
+      "modern": { "winget": "KDE.Krita" },
+      "legacy": {
+        "url": "https://download.kde.org/stable/krita/5.0.6/krita-x64-5.0.6.exe",
+        "filename": "Krita_Setup.exe"
+      }
+    },
+    {
+      "id": "irfanview",
+      "name": "IrfanView",
+      "category": "Media",
+      "modern": { "winget": "IrfanSkiljan.IrfanView" },
+      "legacy": {
+        "url": "https://www.irfanview.info/files/iview469_x64.zip",
+        "filename": "IrfanView.zip",
+        "isZip": true
+      }
+    },
+    {
+      "id": "klite",
+      "name": "K-Lite Codec Pack Mega",
+      "category": "Media",
+      "modern": { "winget": "CodecGuide.K-LiteCodecPack.Mega" },
+      "legacy": {
+        "url": "https://files.freecodecs.org/archived/K-Lite_Codec_Pack_1750_Mega.exe",
+        "filename": "K-Lite_Mega_Setup.exe"
+      }
+    },
+    {
+      "id": "obs",
+      "name": "OBS Studio",
+      "category": "Media",
+      "modern": { "winget": "OBSProject.OBSStudio" },
+      "legacy": {
+        "url": "https://github.com/obsproject/obs-studio/releases/download/28.1.2/OBS-Studio-28.1.2-Full-Installer-x64.exe",
+        "filename": "OBS_Setup.exe"
+      }
+    },
+    {
+      "id": "handbrake",
+      "name": "HandBrake",
+      "category": "Media",
+      "modern": { "winget": "HandBrake.HandBrake" },
+      "legacy": {
+        "url": "https://handbrake.fr/rotation.php?file=HandBrake-1.6.1-x86_64-Win_GUI.exe",
+        "filename": "HandBrake_Setup.exe"
+      }
+    },
+    {
+      "id": "vscode",
+      "name": "Visual Studio Code",
+      "category": "Development",
+      "modern": { "winget": "Microsoft.VisualStudioCode" },
+      "legacy": {
+        "url": "https://code.visualstudio.com/sha/download?build=stable&os=win32-x64-archive",
+        "filename": "VSCode-win32-x64.zip",
+        "isZip": true
+      }
+    },
+    {
+      "id": "git",
+      "name": "Git",
+      "category": "Development",
+      "modern": { "winget": "Git.Git" },
+      "legacy": {
+        "url": "https://github.com/git-for-windows/git/releases/download/v2.43.0.windows.1/Git-2.43.0-64-bit.exe",
+        "filename": "Git-Setup.exe"
+      }
+    },
+    {
+      "id": "nodejs",
+      "name": "Node.js LTS",
+      "category": "Development",
+      "modern": { "winget": "OpenJS.NodeJS.LTS" },
+      "legacy": {
+        "url": "https://nodejs.org/dist/v18.19.0/node-v18.19.0-x64.msi",
+        "filename": "NodeJS.msi"
+      }
+    },
+    {
+      "id": "python",
+      "name": "Python 3",
+      "category": "Development",
+      "modern": { "winget": "Python.Python.3.12" },
+      "legacy": {
+        "url": "https://www.python.org/ftp/python/3.9.13/python-3.9.13-amd64.exe",
+        "filename": "Python_Setup.exe"
+      }
+    },
+    {
+      "id": "rust",
+      "name": "Rust (rustup)",
+      "category": "Development",
+      "modern": { "winget": "Rustlang.Rustup" },
+      "legacy": null
+    },
+    {
+      "id": "java",
+      "name": "OpenJDK 17",
+      "category": "Development",
+      "modern": { "winget": "Microsoft.OpenJDK.17" },
+      "legacy": {
+        "url": "https://download.java.net/java/GA/jdk17.0.2/dfd4a8d0985749f896bed50d7138ee7f/8/GPL/openjdk-17.0.2_windows-x64_bin.zip",
+        "filename": "OpenJDK17.zip",
+        "isZip": true
+      }
+    },
+    {
+      "id": "postman",
+      "name": "Postman",
+      "category": "Development",
+      "modern": { "winget": "Postman.Postman" },
+      "legacy": null
+    },
+    {
+      "id": "dbeaver",
+      "name": "DBeaver Community",
+      "category": "Development",
+      "modern": { "winget": "DBeaverCorp.DBeaverCommunity" },
+      "legacy": {
+        "url": "https://dbeaver.io/files/dbeaver-ce-latest-x86_64-setup.exe",
+        "filename": "DBeaver_Setup.exe"
+      }
+    },
+    {
+      "id": "heidi",
+      "name": "HeidiSQL",
+      "category": "Development",
+      "modern": { "winget": "HeidiSQL.HeidiSQL" },
+      "legacy": {
+        "url": "https://www.heidisql.com/installers/HeidiSQL_12.4_64_Portable.zip",
+        "filename": "HeidiSQL.zip",
+        "isZip": true
+      }
+    },
+    {
+      "id": "steam",
+      "name": "Steam",
+      "category": "Gaming",
+      "modern": { "winget": "Valve.Steam" },
+      "legacy": {
+        "url": "https://cdn.cloudflare.steamstatic.com/client/installer/SteamSetup.exe",
+        "filename": "SteamSetup.exe"
+      }
+    },
+    {
+      "id": "discord",
+      "name": "Discord",
+      "category": "Gaming",
+      "modern": { "winget": "Discord.Discord" },
+      "legacy": {
+        "url": "https://dl.discordapp.net/apps/win/0.0.309/DiscordSetup.exe",
+        "filename": "DiscordSetup.exe"
+      }
+    },
+    {
+      "id": "epic",
+      "name": "Epic Games Launcher",
+      "category": "Gaming",
+      "modern": { "winget": "EpicGames.EpicGamesLauncher" },
+      "legacy": {
+        "url": "https://launcher-public-service-prod06.ol.epicgames.com/launcher/api/installer/download/EpicGamesLauncherInstaller.msi",
+        "filename": "EpicGames_Setup.msi"
+      }
+    },
+    {
+      "id": "gog",
+      "name": "GOG Galaxy",
+      "category": "Gaming",
+      "modern": { "winget": "GOG.Galaxy" },
+      "legacy": {
+        "url": "https://cdn.gog.com/open/galaxy/2.0/installer/GOG_Galaxy_64bit_2.0.69.3.exe",
+        "filename": "GOG_Galaxy_Setup.exe"
+      }
+    },
+    {
+      "id": "ubisoft",
+      "name": "Ubisoft Connect",
+      "category": "Gaming",
+      "modern": { "winget": "Ubisoft.Connect" },
+      "legacy": null
+    },
+    {
+      "id": "ea-app",
+      "name": "EA App",
+      "category": "Gaming",
+      "modern": { "winget": "ElectronicArts.EADesktop" },
+      "legacy": null
+    },
+    {
+      "id": "minecraft",
+      "name": "Minecraft Launcher",
+      "category": "Gaming",
+      "modern": { "winget": "Mojang.MinecraftLauncher" },
+      "legacy": {
+        "url": "https://launcher.mojang.com/download/MinecraftInstaller.msi",
+        "filename": "Minecraft_Setup.msi"
+      }
+    },
+    {
+      "id": "prism",
+      "name": "Prism Launcher",
+      "category": "Gaming",
+      "modern": { "winget": "PrismLauncher.PrismLauncher" },
+      "legacy": null
+    },
+    {
+      "id": "playnite",
+      "name": "Playnite",
+      "category": "Gaming",
+      "modern": { "winget": "Playnite.Playnite" },
+      "legacy": {
+        "url": "https://github.com/Playnite/Playnite/releases/download/10.26/Playnite1026.exe",
+        "filename": "Playnite_Setup.exe"
+      }
+    },
+    {
+      "id": "itch",
+      "name": "itch.io App",
+      "category": "Gaming",
+      "modern": { "winget": "ItchIo.Itch" },
+      "legacy": null
+    },
+    {
+      "id": "geforce",
+      "name": "NVIDIA GeForce Experience",
+      "category": "Gaming",
+      "modern": { "winget": "NVIDIA.GeForceExperience" },
+      "legacy": null
+    },
+    {
+      "id": "afterburner",
+      "name": "MSI Afterburner",
+      "category": "Gaming",
+      "modern": { "winget": "Guru3D.Afterburner" },
+      "legacy": {
+        "url": "https://download.msi.com/uti_exe/vga/MSIAfterburnerSetup463.zip",
+        "filename": "Afterburner.zip",
+        "isZip": true
+      }
+    },
+    {
+      "id": "veracrypt",
+      "name": "VeraCrypt",
+      "category": "Security",
+      "modern": { "winget": "IDRIX.VeraCrypt" },
+      "legacy": {
+        "url": "https://launchpad.net/veracrypt/trunk/1.26.7/+download/VeraCrypt_Setup_1.26.7_x64.exe",
+        "filename": "VeraCrypt_Setup.exe"
+      }
+    },
+    {
+      "id": "bitwarden",
+      "name": "Bitwarden",
+      "category": "Security",
+      "modern": { "winget": "Bitwarden.Bitwarden" },
+      "legacy": null
+    },
+    {
+      "id": "bleachbit",
+      "name": "BleachBit",
+      "category": "Security",
+      "modern": { "winget": "BleachBit.BleachBit" },
+      "legacy": {
+        "url": "https://download.bleachbit.org/BleachBit-4.5.2-setup.exe",
+        "filename": "BleachBit_Setup.exe"
+      }
+    },
+    {
+      "id": "malwarebytes",
+      "name": "Malwarebytes",
+      "category": "Security",
+      "modern": { "winget": "Malwarebytes.Malwarebytes" },
+      "legacy": null
+    },
+    {
+      "id": "libreoffice",
+      "name": "LibreOffice",
+      "category": "Office",
+      "modern": { "winget": "TheDocumentFoundation.LibreOffice" },
+      "legacy": {
+        "url": "https://download.documentfoundation.org/libreoffice/stable/24.2.7/win/x86_64/LibreOffice_24.2.7_Win_x86-64.msi",
+        "filename": "LibreOffice_Setup.msi"
+      }
+    },
+    {
+      "id": "sumatra",
+      "name": "Sumatra PDF",
+      "category": "Office",
+      "modern": { "winget": "SumatraPDF.SumatraPDF" },
+      "legacy": {
+        "url": "https://www.sumatrapdfreader.org/dl/rel/3.5.2/SumatraPDF-3.5.2-64.exe",
+        "filename": "SumatraPDF_Setup.exe"
+      }
+    },
+    {
+      "id": "acrobat",
+      "name": "Adobe Acrobat Reader",
+      "category": "Office",
+      "modern": { "winget": "Adobe.Acrobat.Reader.64-bit" },
+      "legacy": {
+        "url": "https://ardownload2.adobe.com/pub/adobe/reader/win/AcrobatDC/2300120202/AcroRdrDC2300120202_en_US.exe",
+        "filename": "Acrobat_Reader_Setup.exe"
+      }
+    },
+    {
+      "id": "zoom",
+      "name": "Zoom",
+      "category": "Office",
+      "modern": { "winget": "Zoom.Zoom" },
+      "legacy": {
+        "url": "https://zoom.us/client/latest/ZoomInstaller64.msi",
+        "filename": "Zoom_Setup.msi"
+      }
+    },
+    {
+      "id": "teams",
+      "name": "Microsoft Teams",
+      "category": "Office",
+      "modern": { "winget": "Microsoft.Teams" },
+      "legacy": null
+    },
+    {
+      "id": "slack",
+      "name": "Slack",
+      "category": "Office",
+      "modern": { "winget": "SlackTechnologies.Slack" },
+      "legacy": null
+    },
+    {
+      "id": "telegram",
+      "name": "Telegram",
+      "category": "Office",
+      "modern": { "winget": "Telegram.TelegramDesktop" },
+      "legacy": {
+        "url": "https://github.com/telegramdesktop/tdesktop/releases/download/v4.16.3/tsetup-x64.4.16.3.exe",
+        "filename": "Telegram_Setup.exe"
+      }
+    },
+    {
+      "id": "signal",
+      "name": "Signal",
+      "category": "Office",
+      "modern": { "winget": "OpenWhisperSystems.Signal" },
+      "legacy": null
+    },
+    {
+      "id": "hwmonitor",
+      "name": "HWiNFO64",
+      "category": "System",
+      "modern": { "winget": "REALiX.HWiNFO64" },
+      "legacy": {
+        "url": "https://www.hwinfo.com/files/hwi_802.zip",
+        "filename": "HWiNFO64.zip",
+        "isZip": true
+      }
+    },
+    {
+      "id": "cpuz",
+      "name": "CPU-Z",
+      "category": "System",
+      "modern": { "winget": "CPUID.CPU-Z" },
+      "legacy": {
+        "url": "https://download.cpuid.com/cpu-z/cpu-z_2.10-en.exe",
+        "filename": "CPU-Z_Setup.exe"
+      }
+    },
+    {
+      "id": "gpuz",
+      "name": "GPU-Z",
+      "category": "System",
+      "modern": { "winget": "TechPowerUp.GPU-Z" },
+      "legacy": {
+        "url": "https://us2-dl.techpowerup.com/files/GPU-Z.2.56.0.exe",
+        "filename": "GPU-Z.exe"
+      }
+    },
+    {
+      "id": "crystaldiskinfo",
+      "name": "CrystalDiskInfo",
+      "category": "System",
+      "modern": { "winget": "CrystalDewWorld.CrystalDiskInfo" },
+      "legacy": {
+        "url": "https://github.com/hiyohiyo/CrystalDiskInfo/releases/download/v9.2.2/CrystalDiskInfo9_2_2.zip",
+        "filename": "CrystalDiskInfo.zip",
+        "isZip": true
+      }
+    },
+    {
+      "id": "powertoys",
+      "name": "Microsoft PowerToys",
+      "category": "System",
+      "modern": { "winget": "Microsoft.PowerToys" },
+      "legacy": null
+    },
+    {
+      "id": "rainmeter",
+      "name": "Rainmeter",
+      "category": "System",
+      "modern": { "winget": "Rainmeter.Rainmeter" },
+      "legacy": {
+        "url": "https://github.com/rainmeter/rainmeter/releases/download/v4.5.18.3671/Rainmeter-4.5.18.exe",
+        "filename": "Rainmeter_Setup.exe"
+      }
+    },
+    {
+      "id": "eartrumpet",
+      "name": "EarTrumpet",
+      "category": "System",
+      "modern": { "winget": "File-New-Project.EarTrumpet" },
+      "legacy": null
+    },
+    {
+      "id": "processhacker",
+      "name": "Process Hacker",
+      "category": "System",
+      "modern": { "winget": "ProcessHacker.ProcessHacker" },
+      "legacy": {
+        "url": "https://github.com/processhacker/processhacker/releases/download/v2.39/processhacker-2.39-setup.exe",
+        "filename": "ProcessHacker_Setup.exe"
+      }
+    },
+    {
+      "id": "runtimes-vc",
+      "name": "Visual C++ Runtimes (All-in-One)",
+      "category": "Other",
+      "modern": { "winget": "Microsoft.VCRedist.2015+.x64" },
+      "legacy": null
+    },
+    {
+      "id": "dotnet",
+      "name": ".NET Desktop Runtime 8",
+      "category": "Other",
+      "modern": { "winget": "Microsoft.DotNet.DesktopRuntime.8" },
+      "legacy": {
+        "choco": "dotnet-desktop-runtime"
+      }
+    }
+  ]
+}

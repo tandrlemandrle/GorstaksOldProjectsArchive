@@ -1,0 +1,166 @@
+Windows Registry Editor Version 5.00
+
+; GEDR Hardening Registry Settings
+; Exported from GEDR detection jobs
+; WARNING: These settings modify system behavior. Review before applying.
+
+; ============================================
+; JobNullSessionProtection - NULL Session Protection
+; ============================================
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters]
+"RestrictAnonymous"=dword:00000001
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa]
+"RestrictAnonymous"=dword:00000001
+"RestrictAnonymousSAM"=dword:00000001
+"EveryoneIncludesAnonymous"=dword:00000000
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters]
+"RestrictNullSessAccess"=dword:00000001
+
+; ============================================
+; JobSecureRemoteAccess - Secure Remote Access
+; ============================================
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Terminal Server]
+"fDenyTSConnections"=dword:00000001
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp]
+"UserAuthentication"=dword:00000001
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Remote Assistance]
+"fAllowToGetHelp"=dword:00000000
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services]
+"fDenyTSConnections"=dword:00000001
+
+; Remote Access Software Blocking
+[HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\System]
+"DisallowRun"=dword:00000001
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\System\DisallowRun]
+"1"="TeamViewer.exe"
+"2"="AnyDesk.exe"
+"3"="LogMeIn.exe"
+"4"="SupremoService.exe"
+
+; ============================================
+; JobPerformanceTweaks - Performance Optimizations
+; ============================================
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\kernel]
+"DistributeTimers"=dword:00000001
+"GlobalTimerResolutionRequests"=dword:00000001
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\PriorityControl]
+"Win32PrioritySeparation"=dword:0000001a
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Power\PowerThrottling]
+"PowerThrottlingOff"=dword:00000001
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management]
+"DisablePagingExecutive"=dword:00000001
+"IoPageLockLimit"=dword:00400000
+"DisablePageCombining"=dword:00000001
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters]
+"Tcp1323Opts"=dword:00000001
+"MaxUserPort"=dword:0000fffe
+"TcpTimedWaitDelay"=dword:0000001e
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\MSMQ\Parameters]
+"TCPNoDelay"=dword:00000001
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile]
+"NetworkThrottlingIndex"=dword:ffffffff
+"SystemResponsiveness"=dword:00000000
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\AFD\Parameters]
+"DefaultReceiveWindow"=dword:0000819a
+"DefaultSendWindow"=dword:0000819a
+
+; GPU Hardware Scheduling
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\GraphicsDrivers]
+"HwSchMode"=dword:00000002
+
+; MMCSS Games Task Priority
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games]
+"GPU Priority"=dword:00000008
+"Priority"=dword:00000006
+"Clock Rate"=dword:00002710
+"Background Only"="False"
+"Scheduling Category"="High"
+"SFIO Priority"="High"
+"Latency Sensitive"="True"
+
+; ============================================
+; JobCVEMitigationPatcher - CVE Mitigations
+; ============================================
+
+; Disable SMBv1 (CVE-2017-0143 through CVE-2017-0148)
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters]
+"SMB1"=dword:00000000
+"DisableCompression"=dword:00000001
+
+; Enable RDP NLA (CVE-2019-0708)
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp]
+"UserAuthentication"=dword:00000001
+
+; Note: ms-msdt protocol deletion and service disabling via sc.exe
+; must be done via command line, not registry
+
+; Disable IPv6 (CVE-2024-38063)
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters]
+"DisabledComponents"=dword:000000ff
+
+; ============================================
+; JobCredentialProtection - Credential Protection
+; ============================================
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa]
+"RunAsPPL"=dword:00000001
+"DisableRestrictedAdmin"=dword:00000001
+"DisableRestrictedAdminOutboundCreds"=dword:00000001
+"wdigest"=dword:00000000
+
+; ============================================
+; JobAudioEnhancement - Audio Enhancement
+; ============================================
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Audio]
+"DisableProtectedAudioDG"=dword:00000000
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Audiosrv]
+"Start"=dword:00000002
+
+; ============================================
+; JobCredentialHardening - Credential Hardening
+; ============================================
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa]
+"RunAsPPL"=dword:00000001
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon]
+"CachedLogonsCount"="0"
+
+; ============================================
+; JobRemoteAccessPrevention - Remote Access Prevention
+; ============================================
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Terminal Server]
+"fDenyTSConnections"=dword:00000001
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Remote Assistance]
+"fAllowToGetHelp"=dword:00000000
+
+; ============================================
+; JobProcessAuditing - Process Auditing
+; ============================================
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa]
+"SCENoApplyLegacyAuditPolicy"=dword:00000001
+
+; ============================================
+; End of Registry File
+; ============================================
