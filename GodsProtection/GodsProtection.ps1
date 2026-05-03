@@ -677,6 +677,8 @@ function Clear-NonRootCertificates {
 # USER/GROUP CLEANUP
 # ============================================================================
 
+$currentUser = $env:USERNAME
+
 function Set-HomeUserConfig {
     Write-SecurityLog "Configuring local users and groups..."
     
@@ -697,7 +699,7 @@ function Set-HomeUserConfig {
         $localUsers = Get-LocalUser -ErrorAction SilentlyContinue
         foreach ($user in $localUsers) {
             # Check for suspicious patterns
-            if ($user.Name -match "^[A-Z0-9]{8,}-|MS-|Azure|Sync|AD|Domain|Admin-\d|^(?!Administrator$).*Admin") {
+            if ($user.Name -match "^[A-Z0-9]{8,}-|MS-|Azure|Sync|AD|Domain|Admin-\d|^(?!Administrator$).*Admin" -and $user.Name -ne $currentUser) {
                 try {
                     Disable-LocalUser -Name $user.Name
                     Write-SecurityLog "Disabled suspicious user: $($user.Name)"
