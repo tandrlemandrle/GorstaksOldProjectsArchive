@@ -833,6 +833,59 @@ function Set-HomeNetwork {
     catch {
         Write-SecurityLog "Error checking VPN connections: $_" "WARN"
     }
+
+    # Set all current and future networks as PRIVATE (untrusted) profile
+    Write-SecurityLog "Configuring network profiles as private/untrusted..."
+    try {
+        # 1. Set all existing network connections to Private profile
+        $networkConnections = Get-NetConnectionProfile -ErrorAction SilentlyContinue
+        foreach ($connection in $networkConnections) {
+            try {
+                Set-NetConnectionProfile -InterfaceIndex $connection.InterfaceIndex -NetworkCategory Private -ErrorAction Stop
+                Write-SecurityLog "Set network '$($connection.Name)' to Private profile"
+            }
+            catch {
+                Write-SecurityLog "Could not set network '$($connection.Name)' to Private: $_" "WARN"
+            }
+        }
+
+        # 2. Registry: Force all networks to be treated as Private (untrusted)
+        # Disable automatic network location awareness (NLA) - prevents auto-switching to Domain/Public
+        $nlaPath = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\NetworkConnections"
+        if (!(Test-Path $nlaPath)) { New-Item -Path $nlaPath -Force | Out-Null }
+        Set-ItemProperty -Path $nlaPath -Name "NC_StdDomainUserSetLocation" -Value 0 -Force
+        Write-SecurityLog "Disabled automatic domain network detection"
+
+        # 3. Registry: Set default network category to Private for all new networks
+        $ncsPath = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\NetworkConnections"
+        Set-ItemProperty -Path $ncsPath -Name "NC_AllowNetLoc_Wizard" -Value 0 -Force
+        Write-SecurityLog "Disabled network location wizard (forces private by default)"
+
+        # 4. Registry: Disable Network List Service automatic categorization
+        $netsvcPath = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\NetworkCategory"
+        if (!(Test-Path $netsvcPath)) { New-Item -Path $netsvcPath -Force | Out-Null }
+        # Category = 0: Public, 1: Private, 2: Domain
+        Set-ItemProperty -Path $netsvcPath -Name "Category" -Value 1 -Force -ErrorAction SilentlyContinue
+
+        # 5. Disable Network Discovery on all profiles (prevents trusting networks)
+        $advFirewallPath = "HKLM:\SOFTWARE\Policies\Microsoft\WindowsFirewall\StandardProfile"
+        if (!(Test-Path $advFirewallPath)) { New-Item -Path $advFirewallPath -Force | Out-Null }
+        Set-ItemProperty -Path $advFirewallPath -Name "DisableNotifications" -Value 1 -Force
+
+        # Apply to all firewall profiles
+        $profiles = @("DomainProfile", "PrivateProfile", "PublicProfile")
+        foreach ($profile in $profiles) {
+            $profilePath = "HKLM:\SOFTWARE\Policies\Microsoft\WindowsFirewall\$profile"
+            if (!(Test-Path $profilePath)) { New-Item -Path $profilePath -Force | Out-Null }
+            # Disable notifications that might cause users to change profile
+            Set-ItemProperty -Path $profilePath -Name "DisableNotifications" -Value 1 -Force -ErrorAction SilentlyContinue
+        }
+
+        Write-SecurityLog "All networks configured as private/untrusted by default"
+    }
+    catch {
+        Write-SecurityLog "Error configuring network profiles: $_" "WARN"
+    }
 }
 
 # ============================================================================
