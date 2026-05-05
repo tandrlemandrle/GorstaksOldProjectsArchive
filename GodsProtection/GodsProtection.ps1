@@ -714,7 +714,6 @@ function Clear-NonRootCertificates {
                     }
                     # Check if it's a non-Microsoft root that's suspicious
                     elseif ($cert.Issuer -notmatch "Microsoft|DigiCert|GlobalSign|VeriSign|Entrust|Go Daddy|Let's Encrypt|ISRG|GeoTrust|Comodo|Thawte|Symantec|Baltimore|Starfield|Amazon|Google|Apple|Cloudflare") {
-                        # Unknown root CA - remove for safety on home PC
                         $shouldRemove = $true
                         $reason = "unknown/untrusted root: $($cert.Subject)"
                     }
@@ -728,7 +727,7 @@ function Clear-NonRootCertificates {
                         $shouldRemove = $true
                         $reason = "Azure/Cloud certificate"
                     }
-                    # Check for client authentication certs (home PC doesn't need)
+                    # Check for client authentication certs
                     elseif ($cert.EnhancedKeyUsageList | Where-Object { $_.FriendlyName -eq "Client Authentication" }) {
                         $shouldRemove = $true
                         $reason = "client authentication certificate"
@@ -749,18 +748,6 @@ function Clear-NonRootCertificates {
             Write-SecurityLog "Error accessing store $storePath : $_" "WARN"
         }
     }
-    
-    # Also check and remove any certificate enrollment/renewal tasks
-    Get-ScheduledTask -ErrorAction SilentlyContinue | Where-Object { $_.TaskName -match "Certificate|Cert|Autoenroll|CEP|CES" } | 
-        ForEach-Object {
-            try {
-                Disable-ScheduledTask -TaskName $_.TaskName -ErrorAction Stop | Out-Null
-                Write-SecurityLog "Disabled certificate task: $($_.TaskName)"
-            }
-            catch {
-                Write-SecurityLog "Could not disable task $($_.TaskName): $_" "WARN"
-            }
-        }
     
     Write-SecurityLog "Certificate cleanup complete. Removed $removedCount certificates."
 }
