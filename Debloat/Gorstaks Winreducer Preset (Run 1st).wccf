@@ -3,7 +3,7 @@
 <Packages>
   <WinReducerEX>110</WinReducerEX>
   <Version>v3.9.9.0</Version>
-  <Date>pon 04 svi 2026 19:08:25</Date>
+  <Date>06-05-2026 01:09:10</Date>
   <Components>
     <Element Category="Appearance" Name="Activate Desktop Context Menu" Selected="false" Value="" />
     <Element Category="Appearance" Name="Safe Mode" Selected="false" Value="" />
@@ -49,14 +49,14 @@
     <Element Category="Appearance" Name="Taskbar Size" Selected="false" Size="" />
     <Element Category="Features" Name="AD LDS Services" Selected="true" Value="3" />
     <Element Category="Features" Name="Data Center Bridging (DCB)" Selected="true" Value="3" />
-    <Element Category="Features" Name="Direct Play" Selected="false" Value="" />
+    <Element Category="Features" Name="Direct Play" Selected="true" Value="1" />
     <Element Category="Features" Name="Host Guardian" Selected="true" Value="3" />
     <Element Category="Features" Name="Hyper-V" Selected="true" Value="3" />
     <Element Category="Features" Name="Internet Explorer 11" Selected="true" Value="3" />
     <Element Category="Features" Name="Internet Information Services (IIS)" Selected="true" Value="3" />
     <Element Category="Features" Name="Microsoft Message Queuing (MSMQ)" Selected="true" Value="3" />
     <Element Category="Features" Name="MultiPoint Connector" Selected="true" Value="3" />
-    <Element Category="Features" Name="Net Framework 3.5" Selected="false" Value="" />
+    <Element Category="Features" Name="Net Framework 3.5" Selected="true" Value="1" />
     <Element Category="Features" Name="Net Framework 4.6 Network Advanced Services" Selected="false" Value="" />
     <Element Category="Features" Name="Printing - LPR Port Monitor" Selected="false" Value="" />
     <Element Category="Features" Name="Printing - LPD Print Service" Selected="false" Value="" />
@@ -72,7 +72,7 @@
     <Element Category="Features" Name="Trivial File Transfer Protocol (TFTP)" Selected="true" Value="3" />
     <Element Category="Features" Name="Windows Defender Application Guard" Selected="true" Value="3" />
     <Element Category="Features" Name="Windows Identity Foundation 3.5" Selected="false" Value="" />
-    <Element Category="Features" Name="Windows Media Player" Selected="false" Value="3" />
+    <Element Category="Features" Name="Windows Media Player" Selected="false" Value="" />
     <Element Category="Features" Name="Windows PowerShell" Selected="false" Value="" />
     <Element Category="Features" Name="Windows Sandbox" Selected="true" Value="3" />
     <Element Category="Features" Name="Windows Search" Selected="false" Value="" />
@@ -264,8 +264,8 @@
     <Element Category="Remove - Control Panels" Name="Control Panel - Game Controllers (Files)" Selected="false" />
     <Element Category="Remove - Control Panels" Name="Control Panel - History Vault" Selected="true" />
     <Element Category="Remove - Control Panels" Name="Control Panel - HomeGroup" Selected="false" />
-    <Element Category="Remove - Control Panels" Name="Control Panel - Indexing Options" Selected="true" />
-    <Element Category="Remove - Control Panels" Name="Control Panel - Indexing Options (Files)" Selected="true" />
+    <Element Category="Remove - Control Panels" Name="Control Panel - Indexing Options" Selected="false" />
+    <Element Category="Remove - Control Panels" Name="Control Panel - Indexing Options (Files)" Selected="false" />
     <Element Category="Remove - Control Panels" Name="Control Panel - Infrared" Selected="true" />
     <Element Category="Remove - Control Panels" Name="Control Panel - Infrared (Files)" Selected="true" />
     <Element Category="Remove - Control Panels" Name="Control Panel - Internet Options" Selected="true" />
@@ -814,8 +814,8 @@
     <Element Category="Remove - Multimedia" Name="Biometry - PIN Authentification" Selected="false" />
     <Element Category="Remove - Multimedia" Name="Biometry - Picture Password" Selected="false" />
     <Element Category="Remove - Multimedia" Name="Bluetooth (Device Pairing)" Selected="false" />
-    <Element Category="Remove - Multimedia" Name="Codec - 3D Audio (Decoder)" Selected="false" />
-    <Element Category="Remove - Multimedia" Name="Codec - 3D Audio (Dolby Headphones Encoder)" Selected="false" />
+    <Element Category="Remove - Multimedia" Name="Codec - 3D Audio (Decoder)" Selected="true" />
+    <Element Category="Remove - Multimedia" Name="Codec - 3D Audio (Dolby Headphones Encoder)" Selected="true" />
     <Element Category="Remove - Multimedia" Name="Codec - AAC (Decoder)" Selected="false" />
     <Element Category="Remove - Multimedia" Name="Codec - AAC (Encoder)" Selected="false" />
     <Element Category="Remove - Multimedia" Name="Codec - ADPCM (Decoder)" Selected="false" />
@@ -828,8 +828,8 @@
     <Element Category="Remove - Multimedia" Name="Codec - ASF (Container)" Selected="false" />
     <Element Category="Remove - Multimedia" Name="Codec - Camera" Selected="false" />
     <Element Category="Remove - Multimedia" Name="Codec - Cinepak" Selected="true" />
-    <Element Category="Remove - Multimedia" Name="Codec - Dolby ATMOS (Encoder)" Selected="false" />
-    <Element Category="Remove - Multimedia" Name="Codec - Dolby Digital (Decoder)" Selected="false" />
+    <Element Category="Remove - Multimedia" Name="Codec - Dolby ATMOS (Encoder)" Selected="true" />
+    <Element Category="Remove - Multimedia" Name="Codec - Dolby Digital (Decoder)" Selected="true" />
     <Element Category="Remove - Multimedia" Name="Codec - Dolby Digital (Encoder)" Selected="true" />
     <Element Category="Remove - Multimedia" Name="Codec - DV (Decoder)" Selected="true" />
     <Element Category="Remove - Multimedia" Name="Codec - DV (Encoder)" Selected="true" />
@@ -907,7 +907,7 @@
     <Element Category="Remove - Multimedia" Name="Speech (Voice Activation)" Selected="true" />
     <Element Category="Remove - Multimedia" Name="Stream Buffer Engine (SBE)" Selected="true" />
     <Element Category="Remove - Multimedia" Name="Windows Imaging Component" Selected="false" />
-    <Element Category="Remove - Multimedia" Name="Windows Media Center" Selected="true" />
+    <Element Category="Remove - Multimedia" Name="Windows Media Center" Selected="false" />
     <Element Category="Remove - Multimedia" Name="Windows PlayTo" Selected="true" />
     <Element Category="Remove - Multimedia" Name="Windows PlayTo (Context Menu)" Selected="true" />
     <Element Category="Remove - Multimedia" Name="Windows PlayTo (Device)" Selected="true" />
@@ -1148,9 +1148,9 @@
     <Element Category="Settings" Name="Privacy - Tasks" Selected="true" />
     <Element Category="Settings" Name="Privacy - Videos" Selected="true" />
     <Element Category="Settings" Name="Privacy - Voice activation" Selected="true" />
-    <Element Category="Settings" Name="Search - Permissions and history" Selected="true" />
-    <Element Category="Settings" Name="Search - Searching Windows" Selected="true" />
-    <Element Category="Settings" Name="Search - More details" Selected="true" />
+    <Element Category="Settings" Name="Search - Permissions and history" Selected="false" />
+    <Element Category="Settings" Name="Search - Searching Windows" Selected="false" />
+    <Element Category="Settings" Name="Search - More details" Selected="false" />
     <Element Category="Settings" Name="Surface Hub - Accounts" Selected="true" />
     <Element Category="Settings" Name="Surface Hub - Team Conferencing" Selected="true" />
     <Element Category="Settings" Name="Surface Hub - Team device management" Selected="true" />
@@ -1449,60 +1449,60 @@
     <Element Category="Optimizations" Name="EXPERT - Windows Updates Files Cleanup (Light)" Selected="true" Value="" />
     <Element Category="Optimizations" Name="EXPERT - WinSXS Folder Cleanup (boot.wim)" Selected="true" />
     <Element Category="Optimizations" Name="EXPERT - WinSXS Folder Cleanup (install.wim)" Selected="false" />
-    <Element Category="Optimizations" Name="EXPERT - WinSXS Folder Compression" Selected="false" Value="" />
+    <Element Category="Optimizations" Name="EXPERT - WinSXS Folder Compression" Selected="true" Value="LZX" />
     <Element Category="Services" Name="ActiveX Service" Selected="true" Value="5" />
     <Element Category="Services" Name="Agent Activation Runtime Service" Selected="false" Value="" />
     <Element Category="Services" Name="AllJoyn Router Service" Selected="true" Value="5" />
     <Element Category="Services" Name="App Readiness Service" Selected="false" Value="" />
-    <Element Category="Services" Name="Application Layer Gateway Service" Selected="true" Value="5" />
-    <Element Category="Services" Name="Assigned Access Manager Service" Selected="true" Value="5" />
-    <Element Category="Services" Name="Auto Time Zone Updater Service" Selected="true" Value="3" />
-    <Element Category="Services" Name="Background Intelligent Transfer Service" Selected="true" Value="3" />
+    <Element Category="Services" Name="Application Layer Gateway Service" Selected="false" Value="" />
+    <Element Category="Services" Name="Assigned Access Manager Service" Selected="false" Value="" />
+    <Element Category="Services" Name="Auto Time Zone Updater Service" Selected="false" Value="" />
+    <Element Category="Services" Name="Background Intelligent Transfer Service" Selected="false" Value="" />
     <Element Category="Services" Name="Beep Service" Selected="true" Value="5" />
     <Element Category="Services" Name="BitLocker Drive Encryption Service" Selected="true" Value="5" />
     <Element Category="Services" Name="Block Level Backup Engine Service" Selected="true" Value="5" />
     <Element Category="Services" Name="Bluetooth Audio Gateway Service" Selected="false" Value="" />
     <Element Category="Services" Name="Bluetooth AVCTP Service" Selected="false" Value="" />
     <Element Category="Services" Name="Bluetooth Support Service" Selected="false" Value="" />
-    <Element Category="Services" Name="BranchCache Service" Selected="true" Value="5" />
-    <Element Category="Services" Name="Capture Service" Selected="true" Value="3" />
-    <Element Category="Services" Name="Cellular Time Service" Selected="true" Value="3" />
+    <Element Category="Services" Name="BranchCache Service" Selected="false" Value="" />
+    <Element Category="Services" Name="Capture Service" Selected="false" Value="" />
+    <Element Category="Services" Name="Cellular Time Service" Selected="false" Value="" />
     <Element Category="Services" Name="COM+ Event System Service" Selected="false" Value="" />
-    <Element Category="Services" Name="COM+ System Application Service" Selected="true" Value="3" />
-    <Element Category="Services" Name="Computer Browser Service" Selected="true" Value="3" />
+    <Element Category="Services" Name="COM+ System Application Service" Selected="false" Value="" />
+    <Element Category="Services" Name="Computer Browser Service" Selected="false" Value="" />
     <Element Category="Services" Name="Connected Devices Platform Service" Selected="false" Value="" />
     <Element Category="Services" Name="Connected Devices Platform User Service" Selected="false" Value="" />
     <Element Category="Services" Name="Connected User Experiences and Telemetry" Selected="false" Value="" />
     <Element Category="Services" Name="ConsentUX Service" Selected="false" Value="" />
-    <Element Category="Services" Name="Contact Data Service" Selected="true" Value="5" />
-    <Element Category="Services" Name="Credential Manager Service" Selected="true" Value="3" />
-    <Element Category="Services" Name="Data Sharing Service" Selected="true" Value="5" />
-    <Element Category="Services" Name="Data Usage Service" Selected="true" Value="5" />
-    <Element Category="Services" Name="Delivery Optimization Service" Selected="true" Value="4" />
-    <Element Category="Services" Name="Device Management Enrollment Service" Selected="true" Value="3" />
-    <Element Category="Services" Name="Device Picker Service" Selected="true" Value="3" />
-    <Element Category="Services" Name="Devices Flow Service" Selected="true" Value="3" />
-    <Element Category="Services" Name="DevQuery Background Discovery Broker Service" Selected="true" Value="3" />
-    <Element Category="Services" Name="Diagnostic Execution Service" Selected="true" Value="5" />
-    <Element Category="Services" Name="Diagnostic Policy Services" Selected="true" Value="5" />
-    <Element Category="Services" Name="Diagnostic Service Host Service" Selected="true" Value="5" />
-    <Element Category="Services" Name="Diagnostic System Host Service" Selected="true" Value="5" />
+    <Element Category="Services" Name="Contact Data Service" Selected="false" Value="" />
+    <Element Category="Services" Name="Credential Manager Service" Selected="false" Value="" />
+    <Element Category="Services" Name="Data Sharing Service" Selected="false" Value="" />
+    <Element Category="Services" Name="Data Usage Service" Selected="false" Value="" />
+    <Element Category="Services" Name="Delivery Optimization Service" Selected="false" Value="" />
+    <Element Category="Services" Name="Device Management Enrollment Service" Selected="false" Value="" />
+    <Element Category="Services" Name="Device Picker Service" Selected="false" Value="" />
+    <Element Category="Services" Name="Devices Flow Service" Selected="false" Value="" />
+    <Element Category="Services" Name="DevQuery Background Discovery Broker Service" Selected="false" Value="" />
+    <Element Category="Services" Name="Diagnostic Execution Service" Selected="false" Value="" />
+    <Element Category="Services" Name="Diagnostic Policy Services" Selected="false" Value="" />
+    <Element Category="Services" Name="Diagnostic Service Host Service" Selected="false" Value="" />
+    <Element Category="Services" Name="Diagnostic System Host Service" Selected="false" Value="" />
     <Element Category="Services" Name="Display Enhancement Service" Selected="false" Value="" />
     <Element Category="Services" Name="Display Policy Service" Selected="false" Value="" />
-    <Element Category="Services" Name="Distributed Link Tracking Client Service" Selected="true" Value="5" />
-    <Element Category="Services" Name="Distributed Transaction Coordinator Service" Selected="true" Value="5" />
+    <Element Category="Services" Name="Distributed Link Tracking Client Service" Selected="false" Value="" />
+    <Element Category="Services" Name="Distributed Transaction Coordinator Service" Selected="false" Value="" />
     <Element Category="Services" Name="Embedded Mode Service" Selected="true" Value="5" />
-    <Element Category="Services" Name="Encrypting File System (EFS) Service" Selected="false" Value="" />
-    <Element Category="Services" Name="Enterprise App Management Service" Selected="true" Value="3" />
+    <Element Category="Services" Name="Encrypting File System (EFS) Service" Selected="true" Value="3" />
+    <Element Category="Services" Name="Enterprise App Management Service" Selected="true" Value="5" />
     <Element Category="Services" Name="Extensible Authentication Protocol (Eaphost) Service" Selected="false" Value="" />
     <Element Category="Services" Name="Fax Service" Selected="true" Value="3" />
     <Element Category="Services" Name="File History Service" Selected="true" Value="5" />
-    <Element Category="Services" Name="Function Discovery Provider Host Service" Selected="true" Value="3" />
-    <Element Category="Services" Name="Function Discovery Resource Publication Service" Selected="true" Value="3" />
-    <Element Category="Services" Name="GameDVR and Broadcast User Service" Selected="true" Value="5" />
+    <Element Category="Services" Name="Function Discovery Provider Host Service" Selected="false" Value="" />
+    <Element Category="Services" Name="Function Discovery Resource Publication Service" Selected="false" Value="" />
+    <Element Category="Services" Name="GameDVR and Broadcast User Service" Selected="false" Value="" />
     <Element Category="Services" Name="Geolocation Service" Selected="true" Value="3" />
-    <Element Category="Services" Name="GPU Energy Driver Service" Selected="true" Value="3" />
-    <Element Category="Services" Name="Graphics Performance Service" Selected="true" Value="3" />
+    <Element Category="Services" Name="GPU Energy Driver Service" Selected="false" Value="" />
+    <Element Category="Services" Name="Graphics Performance Service" Selected="false" Value="" />
     <Element Category="Services" Name="HomeGroup Listener and Provider Services" Selected="false" Value="" />
     <Element Category="Services" Name="Human Interface Device (HID) Service" Selected="false" Value="" />
     <Element Category="Services" Name="HyperV Services" Selected="true" Value="5" />
@@ -1513,15 +1513,15 @@
     <Element Category="Services" Name="Link-Layer Topology Discovery Mapper Service" Selected="false" Value="" />
     <Element Category="Services" Name="Language Experience Service" Selected="false" Value="" />
     <Element Category="Services" Name="Messaging Service" Selected="true" Value="5" />
-    <Element Category="Services" Name="Microsoft Account Sign-in Assistant Service" Selected="true" Value="5" />
-    <Element Category="Services" Name="Microsoft App-V Client Service" Selected="true" Value="5" />
+    <Element Category="Services" Name="Microsoft Account Sign-in Assistant Service" Selected="false" Value="" />
+    <Element Category="Services" Name="Microsoft App-V Client Service" Selected="false" Value="" />
     <Element Category="Services" Name="Microsoft iSCSI Initiator Service" Selected="true" Value="5" />
     <Element Category="Services" Name="Microsoft Passport Service" Selected="false" Value="" />
     <Element Category="Services" Name="Microsoft Passport Container Service" Selected="false" Value="" />
     <Element Category="Services" Name="Natural Authentification Service" Selected="true" Value="5" />
     <Element Category="Services" Name="Net Logon Service" Selected="true" Value="5" />
     <Element Category="Services" Name="Network Connected Devices Auto-Setup Service" Selected="true" Value="3" />
-    <Element Category="Services" Name="Network Connection Broker Service" Selected="true" Value="3" />
+    <Element Category="Services" Name="Network Connection Broker Service" Selected="false" Value="" />
     <Element Category="Services" Name="Network Connectivity Assistant Service" Selected="false" Value="" />
     <Element Category="Services" Name="Offline Files Service" Selected="true" Value="5" />
     <Element Category="Services" Name="OpenSSH Authentication Agent Service" Selected="true" Value="5" />
@@ -1535,10 +1535,10 @@
     <Element Category="Services" Name="Print Workflow Service" Selected="false" Value="" />
     <Element Category="Services" Name="Problem Reports and Solutions Service" Selected="true" Value="5" />
     <Element Category="Services" Name="Program Compatibility Assistant Service" Selected="true" Value="5" />
-    <Element Category="Services" Name="Quality Windows Audio Video Experience Service" Selected="true" Value="5" />
+    <Element Category="Services" Name="Quality Windows Audio Video Experience Service" Selected="false" Value="" />
     <Element Category="Services" Name="Radio Management Service" Selected="false" Value="" />
     <Element Category="Services" Name="Recommended Troubleshooting Service" Selected="true" Value="5" />
-    <Element Category="Services" Name="Remote Access Auto Connection Manager Service" Selected="false" Value="" />
+    <Element Category="Services" Name="Remote Access Auto Connection Manager Service" Selected="true" Value="3" />
     <Element Category="Services" Name="Remote Access Manager Services" Selected="false" Value="" />
     <Element Category="Services" Name="Remote Desktop Configuration Service" Selected="true" Value="5" />
     <Element Category="Services" Name="Remote Desktop Services" Selected="true" Value="5" />
@@ -1567,16 +1567,16 @@
     <Element Category="Services" Name="TCP IP NetBIOS Helper Service" Selected="false" Value="" />
     <Element Category="Services" Name="Telephony Service" Selected="true" Value="3" />
     <Element Category="Services" Name="Touch Keyboard and Handwriting Panel Service" Selected="true" Value="4" />
-    <Element Category="Services" Name="Update Orchestrator Service" Selected="true" Value="5" />
+    <Element Category="Services" Name="Update Orchestrator Service" Selected="false" Value="" />
     <Element Category="Services" Name="UPnP Device Host Service" Selected="true" Value="3" />
     <Element Category="Services" Name="User Data Access Service" Selected="true" Value="3" />
     <Element Category="Services" Name="User Experience Virtualization Service" Selected="true" Value="5" />
     <Element Category="Services" Name="Volume Shadow Copy Service" Selected="true" Value="5" />
     <Element Category="Services" Name="Volumetric Audio Compositor Service" Selected="true" Value="5" />
     <Element Category="Services" Name="Wallet Service" Selected="true" Value="5" />
-    <Element Category="Services" Name="WAP Push Message Routing Service" Selected="true" Value="5" />
+    <Element Category="Services" Name="WAP Push Message Routing Service" Selected="false" Value="" />
     <Element Category="Services" Name="WarpJITSvc Service" Selected="false" Value="" />
-    <Element Category="Services" Name="Web Client Service" Selected="true" Value="5" />
+    <Element Category="Services" Name="Web Client Service" Selected="false" Value="" />
     <Element Category="Services" Name="Wi-Fi Direct Services Connection Manager Service" Selected="false" Value="" />
     <Element Category="Services" Name="Windows Backup Service" Selected="true" Value="5" />
     <Element Category="Services" Name="Windows Camera Frame Service" Selected="false" Value="" />
@@ -1587,10 +1587,10 @@
     <Element Category="Services" Name="Windows Defender Service" Selected="true" Value="5" />
     <Element Category="Services" Name="Windows Defender Security Center Service" Selected="true" Value="5" />
     <Element Category="Services" Name="Windows Defender System Guard Service" Selected="true" Value="5" />
-    <Element Category="Services" Name="Windows Error Reporting Service" Selected="true" Value="3" />
+    <Element Category="Services" Name="Windows Error Reporting Service" Selected="false" Value="" />
     <Element Category="Services" Name="Windows Event Collector Service" Selected="false" Value="" />
     <Element Category="Services" Name="Windows Font Cache Service" Selected="true" Value="3" />
-    <Element Category="Services" Name="Windows Indexing Service" Selected="true" Value="4" />
+    <Element Category="Services" Name="Windows Indexing Service" Selected="false" Value="" />
     <Element Category="Services" Name="Windows Insider Program Service" Selected="true" Value="5" />
     <Element Category="Services" Name="Windows Media Player Network Sharing Service" Selected="true" Value="5" />
     <Element Category="Services" Name="Windows Mobile Hotspot Service" Selected="true" Value="3" />
@@ -1615,10 +1615,10 @@
     <Element Category="Services" Name="Xbox Live Auth Manager Service" Selected="false" Value="" />
     <Element Category="Services" Name="Xbox Live Game Save Service" Selected="false" Value="" />
     <Element Category="Services" Name="Xbox Live Networking Service" Selected="false" Value="" />
-    <Element Category="System" Name="Integrate - Drivers" Selected="false" Value="" Unsigned="" />
+    <Element Category="System" Name="Integrate - Drivers" Selected="true" Value="D:\WinReducerEX110\WORK\INTEGRATE\DRIVERS\x64\Install" Unsigned="" />
     <Element Category="System" Name="Integrate - Drivers (Boot.wim)" Selected="false" Value="" Unsigned="" />
-    <Element Category="System" Name="Integrate - Net Framework 3.5" Selected="false" Value="" />
-    <Element Category="System" Name="Integrate - Updates" Selected="false" Value="" />
+    <Element Category="System" Name="Integrate - Net Framework 3.5" Selected="true" Value="D:\WinReducerEX110\WORK\INTEGRATE\UPDATES\Framework35\x64" />
+    <Element Category="System" Name="Integrate - Updates" Selected="true" Value="D:\WinReducerEX110\WORK\INTEGRATE\UPDATES\x64\24H2" />
     <Element Category="System" Name="Folders - Contacts" Selected="false" Value="" />
     <Element Category="System" Name="Folders - Desktop" Selected="false" Value="" />
     <Element Category="System" Name="Folders - Documents" Selected="false" Value="" />
@@ -1682,9 +1682,9 @@
     <Element Category="Presets" Name="Protect VMware Player and Workstation" Selected="false" />
     <Element Category="Presets" Name="Protect Windows Activation GUI" Selected="true" />
     <Element Category="Presets" Name="Protect Windows Features" Selected="false" />
-    <Element Category="Presets" Name="Protect Windows Media Center" Selected="false" />
+    <Element Category="Presets" Name="Protect Windows Media Center" Selected="true" />
     <Element Category="Presets" Name="Protect Windows Media Player" Selected="true" />
-    <Element Category="Presets" Name="Protect Windows Search" Selected="false" />
+    <Element Category="Presets" Name="Protect Windows Search" Selected="true" />
     <Element Category="Presets" Name="Protect Windows Update" Selected="false" />
     <Element Category="WinReducer Options" Name="Detailed LOG file" Selected="false" />
     <Element Category="WinReducer Options" Name="Removing Speed" Selected="true" Value="3" />
