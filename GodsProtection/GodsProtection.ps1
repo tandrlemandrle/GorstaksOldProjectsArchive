@@ -1,3 +1,11 @@
+param(
+    [switch]$Uninstall,
+    [string]$Mode  # Internal use: "Monitor" for scheduled task checks
+)
+
+# Force NetSecurity module to load
+Import-Module NetSecurity -ErrorAction SilentlyContinue
+
 #Requires -RunAsAdministrator
 <#
 .SYNOPSIS
@@ -38,12 +46,6 @@
     C:\GodsProtection_State.json
 #>
 
-[CmdletBinding()]
-param(
-    [switch]$Uninstall,
-    [string]$Mode  # Internal use: "Monitor" for scheduled task checks
-)
-
 # ============================================================================
 # CONFIGURATION
 # ============================================================================
@@ -66,12 +68,135 @@ function Write-SecurityLog {
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     $logEntry = "[$timestamp] [$Level] $Message"
     Add-Content -Path $script:LogFile -Value $logEntry -ErrorAction SilentlyContinue
-    Write-Host $logEntry -ForegroundColor $(if ($Level -eq "ERROR") { "Red" } elseif ($Level -eq "WARN") { "Yellow" } else { "Green" })
+    $color = if ($Level -eq "ERROR") { "Red" } elseif ($Level -eq "WARN") { "Yellow" } else { "Green" }
+    Write-Host $logEntry -ForegroundColor $color
+}
+
+# ============================================================================
+# SCHEDULED TASK MANAGEMENT (PowerShell Cmdlet + schtasks.exe fallback)
+# ============================================================================
+
+function New-ScheduledTaskWithFallback {
+    param(
+        [string]$TaskName,
+        [string]$Action,
+        [string]$Argument,
+        [string]$Trigger,
+        [string]$Description,
+        [int]$RepetitionIntervalMinutes = $script:IntervalMinutes,
+        [switch]$AtStartup,
+        [switch]$Persistent
+    )
+    
+    $taskCreated = $false
+    
+    # Try PowerShell cmdlets first
+    try {
+        $actionObj = New-ScheduledTaskAction -Execute "powershell.exe" -Argument $Argument -ErrorAction Stop
+        
+        if ($AtStartup) {
+            $triggerObj = New-ScheduledTaskTrigger -AtStartup -ErrorAction Stop
+        } elseif ($Persistent) {
+            $triggerObj = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes $RepetitionIntervalMinutes) -RepetitionDuration (New-TimeSpan -Days 3650) -ErrorAction Stop
+        } else {
+            $triggerObj = New-ScheduledTaskTrigger -Once -At (Get-Date) -ErrorAction Stop
+        }
+        
+        $settingsObj = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -RunOnlyIfNetworkAvailable:$false -Priority 7 -ErrorAction Stop
+        $principalObj = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest -ErrorAction Stop
+        
+        Register-ScheduledTask -TaskName $TaskName -Action $actionObj -Trigger $triggerObj -Settings $settingsObj -Principal $principalObj -Description $Description -Force -ErrorAction Stop | Out-Null
+        $taskCreated = $true
+        Write-SecurityLog "Created task using PowerShell cmdlets: $TaskName"
+    }
+    catch {
+        Write-SecurityLog "PowerShell scheduled task cmdlets failed: $_" "WARN"
+        Write-SecurityLog "Falling back to schtasks.exe..." "WARN"
+    }
+    
+    # Fallback to schtasks.exe
+    if (-not $taskCreated) {
+        try {
+            # Create a temporary CMD script to work around schtasks.exe argument limitations
+            $tempScript = [System.IO.Path]::GetTempFileName() -replace '\.tmp$', '.cmd'
+            $tempScriptContent = "@echo off`npowershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$($script:ScriptPath)`" -Mode Monitor"
+            [System.IO.File]::WriteAllText($tempScript, $tempScriptContent)
+            
+            if ($Persistent) {
+                $schtasksCmd = "schtasks.exe /Create /F /TN `"$TaskName`" /SC MINUTE /MO $RepetitionIntervalMinutes /TR `"$tempScript`" /RU SYSTEM /RL HIGHEST"
+            } elseif ($AtStartup) {
+                $schtasksCmd = "schtasks.exe /Create /F /TN `"$TaskName`" /SC ONSTART /TR `"$tempScript`" /RU SYSTEM /RL HIGHEST /DELAY 0001:00"
+            } else {
+                $schtasksCmd = "schtasks.exe /Create /F /TN `"$TaskName`" /SC ONLOGON /TR `"$tempScript`" /RU SYSTEM /RL HIGHEST"
+            }
+            
+            Write-SecurityLog "Executing: $schtasksCmd" "DEBUG"
+            Invoke-Expression $schtasksCmd | Out-Null
+            
+            # Keep the temp script - it will be used by the scheduled task
+            Write-SecurityLog "Created wrapper script: $tempScript"
+            $taskCreated = $true
+            Write-SecurityLog "Created task using schtasks.exe: $TaskName"
+        }
+        catch {
+            Write-SecurityLog "schtasks.exe also failed: $_" "ERROR"
+        }
+    }
+    
+    return $taskCreated
+}
+
+function Remove-ScheduledTaskWithFallback {
+    param(
+        [string]$TaskName,
+        [switch]$Silent
+    )
+    
+    $taskRemoved = $false
+    
+    # Try PowerShell cmdlets first
+    try {
+        $existing = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+        if ($existing) {
+            Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false -ErrorAction Stop
+            $taskRemoved = $true
+            if (-not $Silent) {
+                Write-SecurityLog "Removed task using PowerShell: $TaskName"
+            }
+        }
+    }
+    catch {
+        if (-not $Silent) {
+            Write-SecurityLog "PowerShell task removal failed for ${TaskName}: $_" "WARN"
+        }
+    }
+    
+    # Fallback to schtasks.exe
+    if (-not $taskRemoved) {
+        try {
+            $result = schtasks.exe /Query /TN $TaskName 2>$null
+            if ($LASTEXITCODE -eq 0) {
+                schtasks.exe /Delete /TN $TaskName /F | Out-Null
+                $taskRemoved = $true
+                if (-not $Silent) {
+                    Write-SecurityLog "Removed task using schtasks.exe: $TaskName"
+                }
+            }
+        }
+        catch {
+            if (-not $Silent) {
+                Write-SecurityLog "schtasks.exe removal failed for ${TaskName}: $_" "WARN"
+            }
+        }
+    }
+    
+    return $taskRemoved
 }
 
 # ============================================================================
 # REMOVE BOWSER.SYS (Common BSOD culprit on hardened home PCs)
 # ============================================================================
+
 function Remove-BowserDriver {
     Write-SecurityLog "Attempting to neutralize bowser.sys (Computer Browser driver)..."
     
@@ -89,8 +214,8 @@ function Remove-BowserDriver {
 
         if (Test-Path $bowserPath) {
             # Take ownership and grant full control
-            takeown /F $bowserPath /A /R /D Y | Out-Null
-            icacls $bowserPath /grant Administrators:F /T /C | Out-Null
+            takeown /F $bowserPath /A /R /D Y 2>&1 | Out-Null
+            icacls $bowserPath /grant Administrators:F /T /C 2>&1 | Out-Null
             
             # Try to delete
             if (Test-Path $bowserPath) {
@@ -116,7 +241,6 @@ function Remove-BowserDriver {
         }
         
         Write-SecurityLog "bowser.sys neutralization complete"
-        
     }
     catch {
         Write-SecurityLog "Failed to fully remove bowser.sys: $_" "ERROR"
@@ -146,31 +270,17 @@ function Install-GodsProtection {
     Write-SecurityLog "Creating scheduled tasks for persistent monitoring..."
     
     # Periodic monitoring task
-    $action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-ExecutionPolicy Bypass -WindowStyle Hidden -File `"$script:ScriptPath`" -Mode Monitor"
-    $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes $script:IntervalMinutes) -RepetitionDuration (New-TimeSpan -Days 3650)
-    $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -RunOnlyIfNetworkAvailable:$false -Priority 7
-    $principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
+    $periodicTask = New-ScheduledTaskWithFallback -TaskName $script:TaskName -Argument "-ExecutionPolicy Bypass -WindowStyle Hidden -File `"$script:ScriptPath`" -Mode Monitor" -Description "GodsProtection - Divine security monitoring. Reverts unauthorized changes." -Persistent -RepetitionIntervalMinutes $script:IntervalMinutes
     
-    try {
-        Register-ScheduledTask -TaskName $script:TaskName -Action $action -Trigger $trigger -Settings $settings -Principal $principal -Description "GodsProtection - Divine security monitoring. Reverts unauthorized changes." -Force -ErrorAction Stop
-        Write-SecurityLog "Created periodic task: $script:TaskName (runs every $script:IntervalMinutes minutes)"
-    }
-    catch {
-        Write-SecurityLog "Failed to create periodic task: $_" "ERROR"
+    if (-not $periodicTask) {
+        Write-SecurityLog "CRITICAL: Failed to create periodic monitoring task!" "ERROR"
     }
     
     # Startup task
-    $startupAction = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-ExecutionPolicy Bypass -WindowStyle Hidden -File `"$script:ScriptPath`" -Mode Monitor"
-    $startupTrigger = New-ScheduledTaskTrigger -AtStartup
-    $startupSettings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
-    $startupPrincipal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
+    $startupTask = New-ScheduledTaskWithFallback -TaskName $script:StartupTaskName -Argument "-ExecutionPolicy Bypass -WindowStyle Hidden -File `"$script:ScriptPath`" -Mode Monitor" -Description "GodsProtection - Initial configuration at startup" -AtStartup
     
-    try {
-        Register-ScheduledTask -TaskName $script:StartupTaskName -Action $startupAction -Trigger $startupTrigger -Settings $startupSettings -Principal $startupPrincipal -Description "GodsProtection - Initial configuration at startup" -Force -ErrorAction Stop
-        Write-SecurityLog "Created startup task: $script:StartupTaskName"
-    }
-    catch {
-        Write-SecurityLog "Could not create startup task: $_" "WARN"
+    if (-not $startupTask) {
+        Write-SecurityLog "WARNING: Failed to create startup task" "WARN"
     }
     
     Write-Host ""
@@ -195,26 +305,13 @@ function Install-GodsProtection {
 function Remove-GodsProtectionTasks {
     param([switch]$Silent)
     
-    if (!$Silent) {
+    if (-not $Silent) {
         Write-Host "Removing GodsProtection..." -ForegroundColor Yellow
     }
     
     $tasks = @($script:TaskName, $script:StartupTaskName)
     foreach ($task in $tasks) {
-        $existing = Get-ScheduledTask -TaskName $task -ErrorAction SilentlyContinue
-        if ($existing) {
-            try {
-                Unregister-ScheduledTask -TaskName $task -Confirm:$false -ErrorAction Stop
-                if (!$Silent) {
-                    Write-SecurityLog "Removed task: $task"
-                }
-            }
-            catch {
-                if (!$Silent) {
-                    Write-SecurityLog "Could not remove task $task : $_" "WARN"
-                }
-            }
-        }
+        Remove-ScheduledTaskWithFallback -TaskName $task -Silent:$Silent | Out-Null
     }
     
     # Also check for and remove any old service
@@ -222,19 +319,19 @@ function Remove-GodsProtectionTasks {
     if ($existingService) {
         try {
             Stop-Service -Name $script:ServiceName -Force -ErrorAction SilentlyContinue
-            sc.exe delete $script:ServiceName | Out-Null
-            if (!$Silent) {
+            sc.exe delete $script:ServiceName 2>&1 | Out-Null
+            if (-not $Silent) {
                 Write-SecurityLog "Removed service: $script:ServiceName"
             }
         }
         catch {
-            if (!$Silent) {
+            if (-not $Silent) {
                 Write-SecurityLog "Could not remove service: $_" "WARN"
             }
         }
     }
     
-    if (!$Silent) {
+    if (-not $Silent) {
         Write-Host ""
         Write-Host "GodsProtection has been removed." -ForegroundColor Cyan
         Write-Host "Note: Security settings remain in place." -ForegroundColor Yellow
@@ -250,12 +347,18 @@ function Start-MonitorMode {
     Write-SecurityLog "GodsProtection monitor starting..."
     
     # Load baseline
-    if (!(Test-Path $script:StateFile)) {
+    if (-not (Test-Path $script:StateFile)) {
         Write-SecurityLog "No baseline found. Creating new baseline..."
         Get-SystemBaseline | Out-Null
     }
     
-    $baseline = Get-Content -Path $script:StateFile -Raw | ConvertFrom-Json -AsHashtable
+    $baselineContent = Get-Content -Path $script:StateFile -Raw -ErrorAction SilentlyContinue
+    if ($baselineContent) {
+        $baseline = $baselineContent | ConvertFrom-Json -AsHashtable
+    } else {
+        Write-SecurityLog "Failed to load baseline, creating new one..." "WARN"
+        $baseline = Get-SystemBaseline
+    }
     
     # Run single check
     Write-SecurityLog "Running compliance check..."
@@ -295,8 +398,8 @@ RequireLogonToChangePassword = 0
 ClearTextPassword = 0
 LSAAnonymousNameLookup = 0
 EnableGuestAccount = 0
-NewGuestName = `"Guest`"
-NewAdministratorName = `"Administrator`"
+NewGuestName = "Guest"
+NewAdministratorName = "Administrator"
 
 [Event Audit]
 AuditSystemEvents = 0
@@ -340,58 +443,53 @@ SeRemoteShutdownPrivilege = *S-1-5-32-544
 SeShutdownPrivilege = *S-1-5-32-544,*S-1-5-32-551,*S-1-5-32-545
 
 [Version]
-signature=`"`$CHICAGO`$`"
+signature="`$CHICAGO`$"
 Revision=1
 "@
 
-    $templatePath = "$env:TEMP\HomeSecurityTemplate.inf"
-    $securityDB = "$env:TEMP\HomeSecurityDB.sdb"
+    $templatePath = "$env:TEMP\HomeSecurityTemplate_$(Get-Random).inf"
+    $securityDB = "$env:TEMP\HomeSecurityDB_$(Get-Random).sdb"
     
     $securityTemplate | Out-File -FilePath $templatePath -Encoding Unicode -Force
     
     try {
         # Create database and import template
-        if (Test-Path $securityDB) { Remove-Item $securityDB -Force }
+        if (Test-Path $securityDB) { Remove-Item $securityDB -Force -ErrorAction SilentlyContinue }
         
         # Use secedit to configure
-        $result = Start-Process -FilePath "secedit.exe" -ArgumentList "/configure", "/db", $securityDB, "/cfg", $templatePath, "/overwrite", "/quiet" -Wait -PassThru -NoNewWindow
+        $processInfo = Start-Process -FilePath "secedit.exe" -ArgumentList "/configure", "/db", $securityDB, "/cfg", $templatePath, "/overwrite", "/quiet" -Wait -PassThru -NoNewWindow -ErrorAction Stop
         
-        if ($result.ExitCode -eq 0) {
+        if ($processInfo.ExitCode -eq 0) {
             Write-SecurityLog "Security policy configured successfully"
         } else {
-            Write-SecurityLog "Security policy configuration returned exit code: $($result.ExitCode)" "WARN"
+            Write-SecurityLog "Security policy configuration returned exit code: $($processInfo.ExitCode)" "WARN"
         }
     }
     catch {
         Write-SecurityLog "Failed to configure security policy: $_" "ERROR"
     }
     finally {
-        if (Test-Path $templatePath) { Remove-Item $templatePath -Force }
-        if (Test-Path $securityDB) { Remove-Item $securityDB -Force }
+        if (Test-Path $templatePath) { Remove-Item $templatePath -Force -ErrorAction SilentlyContinue }
+        if (Test-Path $securityDB) { Remove-Item $securityDB -Force -ErrorAction SilentlyContinue }
     }
     
     # Additional direct registry settings
     $regSettings = @{
-        # Disable remote desktop
         "HKLM:\SYSTEM\CurrentControlSet\Control\Terminal Server" = @{
             "fDenyTSConnections" = 1
             "fSingleSessionPerUser" = 1
         }
-        # Disable remote assistance
         "HKLM:\SYSTEM\CurrentControlSet\Control\Remote Assistance" = @{
             "fAllowToGetHelp" = 0
             "fAllowFullControl" = 0
         }
-        # Disable NLA for RDP (belt and suspenders)
         "HKLM:\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" = @{
             "SecurityLayer" = 0
             "UserAuthentication" = 0
         }
-        # Network security - disable insecure protocols
         "HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest" = @{
             "UseLogonCredential" = 0
         }
-        # Disable SMB1
         "HKLM:\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters" = @{
             "SMB1" = 0
         }
@@ -399,14 +497,13 @@ Revision=1
             "EnableSecuritySignature" = 1
             "RequireSecuritySignature" = 1
         }
-        # Disable automatic certificate enrollment
         "HKLM:\SOFTWARE\Policies\Microsoft\Cryptography\AutoEnrollment" = @{
             "AESetting" = 0
         }
     }
     
     foreach ($path in $regSettings.Keys) {
-        if (!(Test-Path $path)) {
+        if (-not (Test-Path $path)) {
             New-Item -Path $path -Force | Out-Null
         }
         foreach ($name in $regSettings[$path].Keys) {
@@ -431,45 +528,45 @@ function Set-HomeServices {
     # Services to disable for home/single-user PC
     $servicesToDisable = @(
         # Remote access services
-        "TermService"           # Remote Desktop Services
-        "SessionEnv"            # Remote Desktop Configuration
-        "UmRdpService"          # Remote Desktop Services UserMode Port Redirector
-        "RemoteAccess"          # Routing and Remote Access
-        "RemoteRegistry"        # Remote Registry
-        "RpcLocator"            # Remote Procedure Call (RPC) Locator
-        "lmhosts"               # TCP/IP NetBIOS Helper (legacy networking)
+        "TermService",           # Remote Desktop Services
+        "SessionEnv",            # Remote Desktop Configuration
+        "UmRdpService",          # Remote Desktop Services UserMode Port Redirector
+        "RemoteAccess",          # Routing and Remote Access
+        "RemoteRegistry",        # Remote Registry
+        "RpcLocator",            # Remote Procedure Call (RPC) Locator
+        "lmhosts",               # TCP/IP NetBIOS Helper (legacy networking)
         
         # Active Directory / Domain services
-        "NTDS"                  # Active Directory Domain Services (if present)
-        "ADWS"                  # Active Directory Web Services
-        "dfs"                   # DFS Namespace (domain related)
-        "DFSR"                  # DFS Replication
-        "IsmServ"               # Intersite Messaging
-        "kdc"                   # Kerberos Key Distribution Center
-        "Netlogon"              # Netlogon (domain auth)
-        "DNS"                   # DNS Server (if running locally)
+        "NTDS",                  # Active Directory Domain Services (if present)
+        "ADWS",                  # Active Directory Web Services
+        "dfs",                   # DFS Namespace (domain related)
+        "DFSR",                  # DFS Replication
+        "IsmServ",               # Intersite Messaging
+        "kdc",                   # Kerberos Key Distribution Center
+        "Netlogon",              # Netlogon (domain auth)
+        "DNS",                   # DNS Server (if running locally)
         
         # Azure / Cloud sync services
-        "AzureADConnectHealthSync"  # Azure AD Connect Health
-        "ADSync"                    # Azure AD Connect Sync
-        "MicrosoftAzureADConnectAgent" # Azure AD Connect Agent
-        "MSOnlineServicesSignInAssistant" # Microsoft Online Services Sign-in Assistant
+        "AzureADConnectHealthSync",  # Azure AD Connect Health
+        "ADSync",                    # Azure AD Connect Sync
+        "MicrosoftAzureADConnectAgent", # Azure AD Connect Agent
+        "MSOnlineServicesSignInAssistant", # Microsoft Online Services Sign-in Assistant
         
         # Certificate/Enterprise services
-        "CertPropSvc"           # Certificate Propagation
-        "KeyIso"                # CNG Key Isolation (careful with this one)
+        "CertPropSvc",           # Certificate Propagation
+        "KeyIso",                # CNG Key Isolation (careful with this one)
         
         # Other enterprise/network services
-        "Browser"               # Computer Browser (legacy)
-        "SSDPSRV"               # SSDP Discovery (UPnP - security risk)
-        "upnphost"              # UPnP Device Host
-        "FDResPub"              # Function Discovery Resource Publication
-        "FDHost"                # Function Discovery Provider Host
-        "WMPNetworkSvc"         # Windows Media Player Network Sharing
-        "HomeGroupListener"     # HomeGroup Listener (deprecated but may exist)
-        "HomeGroupProvider"     # HomeGroup Provider
-        "MSiSCSI"               # Microsoft iSCSI Initiator Service
-        "WPCSvc"                # Parental Controls (if not needed)
+        "Browser",               # Computer Browser (legacy)
+        "SSDPSRV",               # SSDP Discovery (UPnP - security risk)
+        "upnphost",              # UPnP Device Host
+        "FDResPub",              # Function Discovery Resource Publication
+        "FDHost",                # Function Discovery Provider Host
+        "WMPNetworkSvc",         # Windows Media Player Network Sharing
+        "HomeGroupListener",     # HomeGroup Listener (deprecated but may exist)
+        "HomeGroupProvider",     # HomeGroup Provider
+        "MSiSCSI",               # Microsoft iSCSI Initiator Service
+        "WPCSvc"                 # Parental Controls (if not needed)
     )
     
     $disabledServices = @()
@@ -508,7 +605,7 @@ function Set-HomeServices {
                     if ($svc.Status -eq "Running") {
                         Stop-Service -Name $svcName -Force -ErrorAction SilentlyContinue
                     }
-                    Set-Service -Name $svcName -StartupType $targetType
+                    Set-Service -Name $svcName -StartupType $targetType -ErrorAction Stop
                     Write-SecurityLog "Set service $svcName to $targetType"
                 }
             }
@@ -530,18 +627,13 @@ function Set-HomeFirewall {
     
     try {
         # Enable Windows Firewall for all profiles
-        Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled True
+        Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled True -ErrorAction SilentlyContinue
         
         # Set default inbound/outbound
-        Set-NetFirewallProfile -Profile Domain,Public,Private -DefaultInboundAction Block -DefaultOutboundAction Allow
+        Set-NetFirewallProfile -Profile Domain,Public,Private -DefaultInboundAction Block -DefaultOutboundAction Allow -ErrorAction SilentlyContinue
         
         # Disable all existing inbound rules first
-        Get-NetFirewallRule -Direction Inbound -Enabled True | Disable-NetFirewallRule
-        
-        # Create essential inbound rules only
-        $essentialInboundRules = @(
-            @{Name="HomePC-Core Networking"; DisplayName="Core Networking"; Group="Core Networking"}
-        )
+        Get-NetFirewallRule -Direction Inbound -Enabled True -ErrorAction SilentlyContinue | Disable-NetFirewallRule -ErrorAction SilentlyContinue
         
         # Allow DHCP
         New-NetFirewallRule -DisplayName "Allow DHCP" -Direction Inbound -Protocol UDP -LocalPort 68 -RemotePort 67 -Action Allow -Profile Any -Enabled True -ErrorAction SilentlyContinue | Out-Null
@@ -585,21 +677,21 @@ function Clear-NonRootCertificates {
     
     # Certificate stores to clean
     $storesToClean = @(
-        "Cert:\LocalMachine\My"           # Personal
-        "Cert:\LocalMachine\CA"            # Intermediate CAs
-        "Cert:\LocalMachine\AuthRoot"      # Third-party root CAs (keep Microsoft)
-        "Cert:\LocalMachine\TrustedPeople" # Trusted People
-        "Cert:\LocalMachine\TrustedPublisher" # Trusted Publishers
-        "Cert:\LocalMachine\SmartCardRoot" # Smart Card Roots
-        "Cert:\CurrentUser\My"             # Current user personal
-        "Cert:\CurrentUser\CA"              # Current user intermediate
-        "Cert:\CurrentUser\AuthRoot"       # Current user third-party roots
-        "Cert:\CurrentUser\TrustedPeople"  # Current user trusted people
+        "Cert:\LocalMachine\My",           # Personal
+        "Cert:\LocalMachine\CA",            # Intermediate CAs
+        "Cert:\LocalMachine\AuthRoot",      # Third-party root CAs (keep Microsoft)
+        "Cert:\LocalMachine\TrustedPeople", # Trusted People
+        "Cert:\LocalMachine\TrustedPublisher", # Trusted Publishers
+        "Cert:\LocalMachine\SmartCardRoot", # Smart Card Roots
+        "Cert:\CurrentUser\My",             # Current user personal
+        "Cert:\CurrentUser\CA",              # Current user intermediate
+        "Cert:\CurrentUser\AuthRoot",       # Current user third-party roots
+        "Cert:\CurrentUser\TrustedPeople",  # Current user trusted people
         "Cert:\CurrentUser\TrustedPublisher"
     )
     
     foreach ($storePath in $storesToClean) {
-        if (!(Test-Path $storePath)) { continue }
+        if (-not (Test-Path $storePath)) { continue }
         
         try {
             $certs = Get-ChildItem -Path $storePath -Recurse -ErrorAction SilentlyContinue | 
@@ -659,7 +751,7 @@ function Clear-NonRootCertificates {
     }
     
     # Also check and remove any certificate enrollment/renewal tasks
-    Get-ScheduledTask | Where-Object { $_.TaskName -match "Certificate|Cert|Autoenroll|CEP|CES" } | 
+    Get-ScheduledTask -ErrorAction SilentlyContinue | Where-Object { $_.TaskName -match "Certificate|Cert|Autoenroll|CEP|CES" } | 
         ForEach-Object {
             try {
                 Disable-ScheduledTask -TaskName $_.TaskName -ErrorAction Stop | Out-Null
@@ -677,7 +769,7 @@ function Clear-NonRootCertificates {
 # USER/GROUP CLEANUP
 # ============================================================================
 
-$currentUser = $env:USERNAME
+$global:currentUser = $env:USERNAME
 
 function Set-HomeUserConfig {
     Write-SecurityLog "Configuring local users and groups..."
@@ -686,7 +778,7 @@ function Set-HomeUserConfig {
     try {
         $guest = Get-LocalUser -Name "Guest" -ErrorAction SilentlyContinue
         if ($guest -and $guest.Enabled) {
-            Disable-LocalUser -Name "Guest"
+            Disable-LocalUser -Name "Guest" -ErrorAction Stop
             Write-SecurityLog "Disabled Guest account"
         }
     }
@@ -699,9 +791,9 @@ function Set-HomeUserConfig {
         $localUsers = Get-LocalUser -ErrorAction SilentlyContinue
         foreach ($user in $localUsers) {
             # Check for suspicious patterns
-            if ($user.Name -match "^[A-Z0-9]{8,}-|MS-|Azure|Sync|AD|Domain|Admin-\d|^(?!Administrator$).*Admin" -and $user.Name -ne $currentUser) {
+            if ($user.Name -match "^[A-Z0-9]{8,}-|MS-|Azure|Sync|AD|Domain|Admin-\d|^(?!Administrator$).*Admin" -and $user.Name -ne $global:currentUser) {
                 try {
-                    Disable-LocalUser -Name $user.Name
+                    Disable-LocalUser -Name $user.Name -ErrorAction Stop
                     Write-SecurityLog "Disabled suspicious user: $($user.Name)"
                 }
                 catch {
@@ -739,7 +831,7 @@ function Set-HomeUserConfig {
     
     # Ensure current user is only in necessary groups
     try {
-        $currentUserGroups = Get-LocalGroup | Where-Object { 
+        $currentUserGroups = Get-LocalGroup -ErrorAction SilentlyContinue | Where-Object { 
             (Get-LocalGroupMember -Group $_.Name -ErrorAction SilentlyContinue | 
              Where-Object { $_.Name -eq "$env:COMPUTERNAME\$env:USERNAME" }) 
         }
@@ -749,7 +841,7 @@ function Set-HomeUserConfig {
         foreach ($group in $currentUserGroups) {
             if ($group.Name -notin $allowedGroups -and $group.Name -notmatch "Performance|Power|Hyper|Docker|WSL") {
                 try {
-                    Remove-LocalGroupMember -Group $group.Name -Member "$env:COMPUTERNAME\$env:USERNAME"
+                    Remove-LocalGroupMember -Group $group.Name -Member "$env:COMPUTERNAME\$env:USERNAME" -ErrorAction Stop
                     Write-SecurityLog "Removed current user from group: $($group.Name)"
                 }
                 catch {
@@ -764,6 +856,79 @@ function Set-HomeUserConfig {
 }
 
 # ============================================================================
+# PROFILE FIX (Moved to separate function, fixed variable scope)
+# ============================================================================
+
+function Repair-UserProfiles {
+    Write-SecurityLog "Checking for duplicate/corrupt user profiles..."
+    
+    $profileListPath = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList"
+    $currentUser = $env:USERNAME
+    
+    # Collect profiles
+    $profiles = @()
+    
+    Get-ChildItem $profileListPath -ErrorAction SilentlyContinue | ForEach-Object {
+        $sid = $_.PSChildName
+        $path = (Get-ItemProperty -Path $_.PSPath -ErrorAction SilentlyContinue).ProfileImagePath
+        
+        if ($path -and $path -like "C:\Users\*") {
+            $name = Split-Path $path -Leaf
+            
+            $ntuser = Join-Path $path "NTUSER.DAT"
+            $lastWrite = if (Test-Path $ntuser) {
+                (Get-Item $ntuser -ErrorAction SilentlyContinue).LastWriteTime
+            } else {
+                Get-Date "2000-01-01"
+            }
+            
+            $profiles += [PSCustomObject]@{
+                SID = $sid
+                Path = $path
+                Name = $name
+                LastWrite = $lastWrite
+            }
+        }
+    }
+    
+    # Group by base username (strip .000/.001)
+    $groups = $profiles | Group-Object { $_.Name -replace '\.\d+$', '' }
+    
+    foreach ($group in $groups) {
+        if ($group.Count -le 1) { continue }
+        
+        $baseName = $group.Name
+        Write-SecurityLog "Found duplicates for $baseName"
+        
+        # Prefer current user if match
+        $keep = $group.Group | Where-Object { $_.Name -eq $currentUser }
+        
+        if (-not $keep) {
+            # Otherwise pick most recently used profile
+            $keep = $group.Group | Sort-Object LastWrite -Descending | Select-Object -First 1
+        }
+        
+        Write-SecurityLog "Keeping: $($keep.Path)"
+        
+        $toDelete = $group.Group | Where-Object { $_.SID -ne $keep.SID }
+        
+        foreach ($p in $toDelete) {
+            Write-SecurityLog "Removing: $($p.Path)"
+            
+            # Remove registry
+            Remove-Item -Path "$profileListPath\$($p.SID)" -Recurse -Force -ErrorAction SilentlyContinue
+            
+            # Remove folder
+            if (Test-Path $p.Path) {
+                Remove-Item -Path $p.Path -Recurse -Force -ErrorAction SilentlyContinue
+            }
+        }
+    }
+    
+    Write-SecurityLog "Profile repair complete"
+}
+
+# ============================================================================
 # NETWORK CONFIGURATION
 # ============================================================================
 
@@ -772,17 +937,19 @@ function Set-HomeNetwork {
     
     # Disable unused network adapters (except active one)
     try {
-        $activeAdapter = Get-NetAdapter | Where-Object { $_.Status -eq "Up" -and $_.HardwareInterface -eq $true } | Select-Object -First 1
-        $allAdapters = Get-NetAdapter | Where-Object { $_.HardwareInterface -eq $true }
+        $activeAdapter = Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object { $_.Status -eq "Up" -and $_.HardwareInterface -eq $true } | Select-Object -First 1
+        $allAdapters = Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object { $_.HardwareInterface -eq $true }
         
-        foreach ($adapter in $allAdapters) {
-            if ($adapter.InterfaceAlias -ne $activeAdapter.InterfaceAlias) {
-                try {
-                    Disable-NetAdapter -Name $adapter.Name -Confirm:$false -ErrorAction Stop
-                    Write-SecurityLog "Disabled unused adapter: $($adapter.Name)"
-                }
-                catch {
-                    Write-SecurityLog "Could not disable adapter $($adapter.Name): $_" "WARN"
+        if ($activeAdapter -and $allAdapters) {
+            foreach ($adapter in $allAdapters) {
+                if ($adapter.InterfaceAlias -ne $activeAdapter.InterfaceAlias) {
+                    try {
+                        Disable-NetAdapter -Name $adapter.Name -Confirm:$false -ErrorAction Stop
+                        Write-SecurityLog "Disabled unused adapter: $($adapter.Name)"
+                    }
+                    catch {
+                        Write-SecurityLog "Could not disable adapter $($adapter.Name): $_" "WARN"
+                    }
                 }
             }
         }
@@ -793,7 +960,7 @@ function Set-HomeNetwork {
     
     # Disable IPv6 if not needed (optional - comment out if you use IPv6)
     try {
-        $adapters = Get-NetAdapter | Where-Object { $_.Status -eq "Up" }
+        $adapters = Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object { $_.Status -eq "Up" }
         foreach ($adapter in $adapters) {
             Disable-NetAdapterBinding -Name $adapter.Name -ComponentID ms_tcpip6 -ErrorAction SilentlyContinue | Out-Null
         }
@@ -803,17 +970,17 @@ function Set-HomeNetwork {
         Write-SecurityLog "Could not disable IPv6: $_" "WARN"
     }
     
-    # Disable network discovery (home PC doesn't need to advertise itself)
+    # Disable network discovery (PC won't advertise itself to others)
     try {
         $regPath = "HKLM:\SYSTEM\CurrentControlSet\Services\FDResPub\Parameters"
-        if (!(Test-Path $regPath)) { New-Item -Path $regPath -Force | Out-Null }
+        if (-not (Test-Path $regPath)) { New-Item -Path $regPath -Force | Out-Null }
         Set-ItemProperty -Path $regPath -Name "Disabled" -Value 1 -Force
         
         $regPath2 = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\NetworkExplorer\NameSpaceUnknownItems"
-        if (!(Test-Path $regPath2)) { New-Item -Path $regPath2 -Force | Out-Null }
+        if (-not (Test-Path $regPath2)) { New-Item -Path $regPath2 -Force | Out-Null }
         Set-ItemProperty -Path $regPath2 -Name "Hidden" -Value 1 -Force
         
-        Write-SecurityLog "Disabled network discovery"
+        Write-SecurityLog "Disabled network discovery (PC will not advertise itself)"
     }
     catch {
         Write-SecurityLog "Could not disable network discovery: $_" "WARN"
@@ -836,8 +1003,8 @@ function Set-HomeNetwork {
         Write-SecurityLog "Error checking VPN connections: $_" "WARN"
     }
 
-    # Set all current and future networks as PRIVATE (untrusted) profile
-    Write-SecurityLog "Configuring network profiles as private/untrusted..."
+    # Set all current and future networks as PRIVATE (trusted local network)
+    Write-SecurityLog "Configuring network profiles as Private (with file sharing disabled)..."
     try {
         # 1. Set all existing network connections to Private profile
         $networkConnections = Get-NetConnectionProfile -ErrorAction SilentlyContinue
@@ -851,39 +1018,49 @@ function Set-HomeNetwork {
             }
         }
 
-        # 2. Registry: Force all networks to be treated as Private (untrusted)
-        # Disable automatic network location awareness (NLA) - prevents auto-switching to Domain/Public
+        # 2. Registry: Force all networks to be treated as PRIVATE (0 = Private, 1 = Public, 2 = Domain)
+        $netsvcPath = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\NetworkCategory"
+        if (-not (Test-Path $netsvcPath)) { New-Item -Path $netsvcPath -Force | Out-Null }
+        Set-ItemProperty -Path $netsvcPath -Name "Category" -Value 0 -Force -ErrorAction SilentlyContinue
+        Write-SecurityLog "Default network category set to Private"
+        
+        # 3. Registry: Disable automatic network location wizard
         $nlaPath = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\NetworkConnections"
-        if (!(Test-Path $nlaPath)) { New-Item -Path $nlaPath -Force | Out-Null }
+        if (-not (Test-Path $nlaPath)) { New-Item -Path $nlaPath -Force | Out-Null }
+        Set-ItemProperty -Path $nlaPath -Name "NC_AllowNetLoc_Wizard" -Value 0 -Force
+        Write-SecurityLog "Disabled network location wizard"
+        
+        # 4. Registry: Disable automatic domain network detection
         Set-ItemProperty -Path $nlaPath -Name "NC_StdDomainUserSetLocation" -Value 0 -Force
         Write-SecurityLog "Disabled automatic domain network detection"
 
-        # 3. Registry: Set default network category to Private for all new networks
-        $ncsPath = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\NetworkConnections"
-        Set-ItemProperty -Path $ncsPath -Name "NC_AllowNetLoc_Wizard" -Value 0 -Force
-        Write-SecurityLog "Disabled network location wizard (forces private by default)"
-
-        # 4. Registry: Disable Network List Service automatic categorization
-        $netsvcPath = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\NetworkCategory"
-        if (!(Test-Path $netsvcPath)) { New-Item -Path $netsvcPath -Force | Out-Null }
-        # Category = 0: Public, 1: Private, 2: Domain
-        Set-ItemProperty -Path $netsvcPath -Name "Category" -Value 1 -Force -ErrorAction SilentlyContinue
-
-        # 5. Disable Network Discovery on all profiles (prevents trusting networks)
-        $advFirewallPath = "HKLM:\SOFTWARE\Policies\Microsoft\WindowsFirewall\StandardProfile"
-        if (!(Test-Path $advFirewallPath)) { New-Item -Path $advFirewallPath -Force | Out-Null }
-        Set-ItemProperty -Path $advFirewallPath -Name "DisableNotifications" -Value 1 -Force
-
-        # Apply to all firewall profiles
-        $profiles = @("DomainProfile", "PrivateProfile", "PublicProfile")
-        foreach ($profile in $profiles) {
-            $profilePath = "HKLM:\SOFTWARE\Policies\Microsoft\WindowsFirewall\$profile"
-            if (!(Test-Path $profilePath)) { New-Item -Path $profilePath -Force | Out-Null }
-            # Disable notifications that might cause users to change profile
-            Set-ItemProperty -Path $profilePath -Name "DisableNotifications" -Value 1 -Force -ErrorAction SilentlyContinue
+        # 5. Disable File and Printer Sharing firewall rules on ALL profiles
+        $fpsRules = Get-NetFirewallRule -DisplayGroup "File and Printer Sharing" -ErrorAction SilentlyContinue | Where-Object { $_.Enabled -eq $true }
+        foreach ($rule in $fpsRules) {
+            try {
+                Disable-NetFirewallRule -Name $rule.Name -ErrorAction Stop
+                Write-SecurityLog "Disabled firewall rule: $($rule.DisplayName)"
+            }
+            catch {
+                Write-SecurityLog "Could not disable rule $($rule.DisplayName): $_" "WARN"
+            }
         }
-
-        Write-SecurityLog "All networks configured as private/untrusted by default"
+        Write-SecurityLog "Disabled File and Printer Sharing firewall rules"
+        
+        # 6. Block SMB file sharing ports (445, 139) explicitly on all profiles
+        $smbRules = Get-NetFirewallRule | Where-Object { $_.DisplayName -match "Block SMB|Block NetBIOS" -and $_.Enabled -eq $true }
+        if (-not $smbRules) {
+            New-NetFirewallRule -DisplayName "Block SMB TCP 445" -Direction Inbound -Protocol TCP -LocalPort 445 -Action Block -Profile Any -Enabled True -ErrorAction SilentlyContinue | Out-Null
+            New-NetFirewallRule -DisplayName "Block SMB TCP 139" -Direction Inbound -Protocol TCP -LocalPort 139 -Action Block -Profile Any -Enabled True -ErrorAction SilentlyContinue | Out-Null
+            New-NetFirewallRule -DisplayName "Block NetBIOS UDP 137-138" -Direction Inbound -Protocol UDP -LocalPort 137,138 -Action Block -Profile Any -Enabled True -ErrorAction SilentlyContinue | Out-Null
+            Write-SecurityLog "Added explicit block rules for SMB/NetBIOS ports"
+        }
+        
+        # 7. Ensure inbound is blocked on Private profile (redundant but safe)
+        Set-NetFirewallProfile -Profile Private -DefaultInboundAction Block -ErrorAction SilentlyContinue
+        Write-SecurityLog "Private profile inbound default: BLOCK"
+        
+        Write-SecurityLog "Network configuration complete - Private profile with file sharing disabled"
     }
     catch {
         Write-SecurityLog "Error configuring network profiles: $_" "WARN"
@@ -898,52 +1075,51 @@ function Set-HomeScheduledTasks {
     Write-SecurityLog "Configuring scheduled tasks..."
     
     $tasksToDisable = @(
-        # Remote/Enterprise tasks
-        "RemoteAppAndDesktopConnections-Up"
-        "RemoteAppAndDesktopConnections-LogonUpdate"
-        "BgTaskRegistration" # Can be domain-related
-        "IdleMaintenance"
-        "MaintenanceTasks"
-        "WinSAT" # Windows System Assessment Tool
-        "Defrag" # Scheduled defrag (can run manually)
-        "RegIdleBackup" # Registry backup
-        "FamilySafetyMonitor" # If not using family safety
-        "FamilySafetyRefresh"
-        "Microsoft-Windows-DiskDiagnostic\Microsoft-Windows-DiskDiagnosticDataCollector"
-        "Microsoft-Windows-DiskDiagnostic\Microsoft-Windows-DiskDiagnosticResolver"
-        "Windows Defender\Windows Defender Cleanup"
-        "Windows Defender\Windows Defender Scheduled Scan" # Can run manually
-        "Windows Defender\Windows Defender Verification"
-        "QueueReporting" # CEIP/telemetry
-        "Microsoft-Windows-Customer Experience Improvement Program\Uploader"
-        "Microsoft-Windows-Customer Experience Improvement Program\Consolidator"
-        "Microsoft-Windows-Application-Experience\Microsoft-Windows-Application-Experience-ProgramData-Updater"
-        "Microsoft-Windows-Application-Experience\Microsoft-Windows-Application-Experience-StartupAppTask"
-        "Microsoft-Windows-Shell-Core\GatherNetworkInfo" # Network info gathering
-        "Microsoft-Windows-CloudExperienceHost\CreateObjectTask"
-        "Microsoft-Windows-Device Setup\Metadata Refresh"
-        "Microsoft-Windows-DiskFootprint\Diagnostics"
-        "Microsoft-Windows-FileHistory\File History (maintenance mode)"
-        "Microsoft-Windows-Servicing\StartComponentCleanup" # Can run manually
-        "Microsoft-Windows-SettingSync\BackgroundUploadTask" # If not syncing settings
-        "Microsoft-Windows-SettingSync\NetworkStateChangeTask"
-        "Microsoft-Windows-SpacePort\SpaceAgentTask"
-        "Microsoft-Windows-SpacePort\SpaceManagerTask"
-        "Microsoft-Windows-Storage Tiers Management\StorageTiersManagement"
-        "Microsoft-Windows-Storage Tiers Management\StorageTiersOptimization"
-        "Microsoft-Windows-Windows Error Reporting\QueueReporting"
-        "Microsoft-Windows-Workplace Join\Automatic-Device-Join"
-        "Microsoft-Windows-Workplace Join\Device-Sync"
-        "Microsoft-Windows-Workplace Join\Recovery-Check"
-        "UserTask\AutomaticProxyDetection"
-        "UserTask\BackgroundScan"
-        "UserTask\LogonSynchronization"
-        "UserTask\ManualSynchronization"
-        "UserTask\ScheduleRetry"
-        "UserTask\WorkOnline"
-        "XblGameSaveTask" # Xbox game save (if not gaming)
-        "XblGameSaveTaskLogon"
-        "OfficeTelemetryAgentFallBack2016"
+        "RemoteAppAndDesktopConnections-Up",
+        "RemoteAppAndDesktopConnections-LogonUpdate",
+        "BgTaskRegistration",
+        "IdleMaintenance",
+        "MaintenanceTasks",
+        "WinSAT",
+        "Defrag",
+        "RegIdleBackup",
+        "FamilySafetyMonitor",
+        "FamilySafetyRefresh",
+        "Microsoft-Windows-DiskDiagnostic\Microsoft-Windows-DiskDiagnosticDataCollector",
+        "Microsoft-Windows-DiskDiagnostic\Microsoft-Windows-DiskDiagnosticResolver",
+        "Windows Defender\Windows Defender Cleanup",
+        "Windows Defender\Windows Defender Scheduled Scan",
+        "Windows Defender\Windows Defender Verification",
+        "QueueReporting",
+        "Microsoft-Windows-Customer Experience Improvement Program\Uploader",
+        "Microsoft-Windows-Customer Experience Improvement Program\Consolidator",
+        "Microsoft-Windows-Application-Experience\Microsoft-Windows-Application-Experience-ProgramData-Updater",
+        "Microsoft-Windows-Application-Experience\Microsoft-Windows-Application-Experience-StartupAppTask",
+        "Microsoft-Windows-Shell-Core\GatherNetworkInfo",
+        "Microsoft-Windows-CloudExperienceHost\CreateObjectTask",
+        "Microsoft-Windows-Device Setup\Metadata Refresh",
+        "Microsoft-Windows-DiskFootprint\Diagnostics",
+        "Microsoft-Windows-FileHistory\File History (maintenance mode)",
+        "Microsoft-Windows-Servicing\StartComponentCleanup",
+        "Microsoft-Windows-SettingSync\BackgroundUploadTask",
+        "Microsoft-Windows-SettingSync\NetworkStateChangeTask",
+        "Microsoft-Windows-SpacePort\SpaceAgentTask",
+        "Microsoft-Windows-SpacePort\SpaceManagerTask",
+        "Microsoft-Windows-Storage Tiers Management\StorageTiersManagement",
+        "Microsoft-Windows-Storage Tiers Management\StorageTiersOptimization",
+        "Microsoft-Windows-Windows Error Reporting\QueueReporting",
+        "Microsoft-Windows-Workplace Join\Automatic-Device-Join",
+        "Microsoft-Windows-Workplace Join\Device-Sync",
+        "Microsoft-Windows-Workplace Join\Recovery-Check",
+        "UserTask\AutomaticProxyDetection",
+        "UserTask\BackgroundScan",
+        "UserTask\LogonSynchronization",
+        "UserTask\ManualSynchronization",
+        "UserTask\ScheduleRetry",
+        "UserTask\WorkOnline",
+        "XblGameSaveTask",
+        "XblGameSaveTaskLogon",
+        "OfficeTelemetryAgentFallBack2016",
         "OfficeTelemetryAgentLogon2016"
     )
     
@@ -956,7 +1132,7 @@ function Set-HomeScheduledTasks {
             }
         }
         catch {
-            # Task might not exist
+            # Task might not exist - that's fine
         }
     }
 }
@@ -971,9 +1147,9 @@ function Get-SystemBaseline {
     $baseline = @{
         Timestamp = Get-Date -Format "o"
         Services = @{}
-        FirewallRules = @()
-        Certificates = @()
-        LocalUsers = @()
+        FirewallRules = ""
+        Certificates = ""
+        LocalUsers = ""
         RegistrySettings = @{}
     }
     
@@ -998,27 +1174,37 @@ function Get-SystemBaseline {
     }
     
     # Capture firewall inbound rules (should be minimal)
-    $baseline.FirewallRules = (Get-NetFirewallRule -Direction Inbound -Enabled True | 
-        Select-Object Name, DisplayName, LocalPort, RemotePort, Action | ConvertTo-Json -Compress)
+    try {
+        $baseline.FirewallRules = (Get-NetFirewallRule -Direction Inbound -Enabled True -ErrorAction SilentlyContinue | 
+            Select-Object Name, DisplayName, LocalPort, RemotePort, Action | ConvertTo-Json -Compress)
+    }
+    catch { }
     
     # Capture certificate counts
-    $baseline.Certificates = (Get-ChildItem -Path "Cert:\LocalMachine\My" -Recurse -ErrorAction SilentlyContinue | 
-        Select-Object Subject, Thumbprint, NotAfter | ConvertTo-Json -Compress)
+    try {
+        $baseline.Certificates = (Get-ChildItem -Path "Cert:\LocalMachine\My" -Recurse -ErrorAction SilentlyContinue | 
+            Select-Object Subject, Thumbprint, NotAfter | ConvertTo-Json -Compress)
+    }
+    catch { }
     
     # Capture local users
-    $baseline.LocalUsers = (Get-LocalUser -ErrorAction SilentlyContinue | 
-        Select-Object Name, Enabled, LastLogon | ConvertTo-Json -Compress)
+    try {
+        $baseline.LocalUsers = (Get-LocalUser -ErrorAction SilentlyContinue | 
+            Select-Object Name, Enabled, LastLogon | ConvertTo-Json -Compress)
+    }
+    catch { }
     
     # Capture critical registry settings
     $regPaths = @(
-        "HKLM:\SYSTEM\CurrentControlSet\Control\Terminal Server\fDenyTSConnections"
+        "HKLM:\SYSTEM\CurrentControlSet\Control\Terminal Server\fDenyTSConnections",
         "HKLM:\SYSTEM\CurrentControlSet\Control\Remote Assistance\fAllowToGetHelp"
     )
     
     foreach ($regPath in $regPaths) {
         try {
             if (Test-Path $regPath) {
-                $baseline.RegistrySettings[$regPath] = (Get-ItemProperty -Path $regPath -ErrorAction Stop)
+                $value = (Get-ItemProperty -Path $regPath -ErrorAction Stop)
+                $baseline.RegistrySettings[$regPath] = @{ Value = $value.fDenyTSConnections }
             }
         }
         catch { }
@@ -1055,25 +1241,6 @@ function Test-SystemCompliance {
         catch { }
     }
     
-    # Check registry settings
-    foreach ($regPath in $Baseline.RegistrySettings.Keys) {
-        try {
-            if (Test-Path $regPath) {
-                $currentValue = Get-ItemProperty -Path $regPath -ErrorAction Stop
-                # Compare values
-                $expectedValue = $Baseline.RegistrySettings[$regPath]
-                # Simplified comparison - in production, compare specific properties
-            }
-        }
-        catch {
-            $violations += @{
-                Type = "Registry"
-                Item = $regPath
-                Issue = "Registry path not accessible"
-            }
-        }
-    }
-    
     return $violations
 }
 
@@ -1088,17 +1255,13 @@ function Restore-SystemCompliance {
                 try {
                     if ($violation.Expected.StartType -eq "Disabled") {
                         Stop-Service -Name $violation.Item -Force -ErrorAction SilentlyContinue
-                        Set-Service -Name $violation.Item -StartupType Disabled
+                        Set-Service -Name $violation.Item -StartupType Disabled -ErrorAction SilentlyContinue
                         Write-SecurityLog "Restored service $($violation.Item) to disabled state"
                     }
                 }
                 catch {
                     Write-SecurityLog "Failed to restore service $($violation.Item): $_" "ERROR"
                 }
-            }
-            "Registry" {
-                # Re-apply all registry settings
-                Set-HomeSecurityPolicy
             }
         }
     }
@@ -1119,12 +1282,17 @@ function Start-SecurityWatchdog {
     Write-SecurityLog "Press Ctrl+C to stop"
     
     # Load baseline
-    if (!(Test-Path $script:StateFile)) {
+    if (-not (Test-Path $script:StateFile)) {
         Write-SecurityLog "No baseline found. Creating new baseline..."
         Get-SystemBaseline | Out-Null
     }
     
-    $baseline = Get-Content -Path $script:StateFile -Raw | ConvertFrom-Json -AsHashtable
+    $baselineContent = Get-Content -Path $script:StateFile -Raw -ErrorAction SilentlyContinue
+    if ($baselineContent) {
+        $baseline = $baselineContent | ConvertFrom-Json -AsHashtable
+    } else {
+        $baseline = Get-SystemBaseline
+    }
     
     # Main watchdog loop
     while ($true) {
@@ -1160,87 +1328,8 @@ function Start-SecurityWatchdog {
     }
 }
 
-#Requires -RunAsAdministrator
-$ErrorActionPreference = "SilentlyContinue"
-
-$log = "$env:ProgramData\ProfileFix.log"
-"==== RUN $(Get-Date) ====" | Out-File -Append $log
-
-$profileListPath = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList"
-$currentUser = (Get-WmiObject Win32_ComputerSystem).UserName.Split('\')[-1]
-
-# Collect profiles
-$profiles = @()
-
-Get-ChildItem $profileListPath | ForEach-Object {
-    $sid = $_.PSChildName
-    $path = (Get-ItemProperty $_.PSPath).ProfileImagePath
-
-    if ($path -like "C:\Users\*") {
-        $name = Split-Path $path -Leaf
-
-        $ntuser = Join-Path $path "NTUSER.DAT"
-        $lastWrite = if (Test-Path $ntuser) {
-            (Get-Item $ntuser).LastWriteTime
-        } else {
-            Get-Date "2000-01-01"
-        }
-
-        $profiles += [PSCustomObject]@{
-            SID = $sid
-            Path = $path
-            Name = $name
-            LastWrite = $lastWrite
-        }
-    }
-}
-
-# Group by base username (strip .000/.001)
-$groups = $profiles | Group-Object {
-    $_.Name -replace '\.\d+$',''
-}
-
-foreach ($group in $groups) {
-
-    if ($group.Count -le 1) { continue }
-
-    $baseName = $group.Name
-    "Found duplicates for $baseName" | Out-File -Append $log
-
-    # Prefer current user if match
-    $keep = $group.Group | Where-Object {
-        $_.Name -eq $currentUser
-    }
-
-    if (-not $keep) {
-        # Otherwise pick most recently used profile
-        $keep = $group.Group | Sort-Object LastWrite -Descending | Select-Object -First 1
-    }
-
-    "Keeping: $($keep.Path)" | Out-File -Append $log
-
-    $toDelete = $group.Group | Where-Object {
-        $_.SID -ne $keep.SID
-    }
-
-    foreach ($p in $toDelete) {
-
-        "Removing: $($p.Path)" | Out-File -Append $log
-
-        # Remove registry
-        Remove-Item -Path "$profileListPath\$($p.SID)" -Recurse -Force
-
-        # Remove folder
-        if (Test-Path $p.Path) {
-            Remove-Item -Path $p.Path -Recurse -Force
-        }
-    }
-}
-
-"==== DONE ====" | Out-File -Append $log
-
 # ============================================================================
-# MAIN EXECUTION
+# MAIN CONFIGURATION FUNCTION
 # ============================================================================
 
 function Start-GodsProtectionConfiguration {
@@ -1266,13 +1355,16 @@ function Start-GodsProtectionConfiguration {
     # 5. Users/Groups
     Set-HomeUserConfig
     
-    # 6. Network
+    # 6. Profile Repair
+    Repair-UserProfiles
+    
+    # 7. Network
     Set-HomeNetwork
     
-    # 7. Scheduled Tasks
+    # 8. Scheduled Tasks
     Set-HomeScheduledTasks
     
-    # 8. Capture baseline for watchdog
+    # 9. Capture baseline for watchdog
     Get-SystemBaseline | Out-Null
     
     Write-SecurityLog "=========================================="
