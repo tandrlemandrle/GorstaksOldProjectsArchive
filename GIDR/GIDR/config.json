@@ -1,0 +1,36 @@
+{
+  // ═══════════════════════════════════════════════════════════
+  // GIDR v6.3.0 - Gorstaks Intrusion Detection and Response
+  //
+  // Philosophy: files are innocent. Only runtime behavior triggers
+  // response. When malicious behavior is detected, the entire
+  // attack chain is traced to root and nuked.
+  // ═══════════════════════════════════════════════════════════
+
+  // ── Disable all static/file-based auto-response ──
+  // ResponseEngine only acts on behavioral detections regardless
+  "autoKillThreats": false,
+  "autoQuarantine": false,
+
+  // ── Thresholds (affect alerting/logging only) ──
+  "autoKillThreshold": 150,
+  "autoQuarantineThreshold": 120,
+  "autoBlockThreshold": 100,
+  "alertThreshold": 50,
+
+  // ── Database ──
+  "maxDatabaseEntries": 50000,
+  "databaseCleanupDays": 30,
+  "cymruDetectionThreshold": 80,
+
+  // ── Logging ──
+  "jsonLogging": true,
+
+  // ── No exclusions needed — nothing gets quarantined by static scan ──
+  "exclusionPaths": [],
+  "allowlistHashes": [],
+  "allowlistPaths": [],
+  "allowlistSigners": [],
+  "additionalProtectedProcesses": [],
+  "extraRulePaths": []
+}

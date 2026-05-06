@@ -1,0 +1,19 @@
+# Build output
+bin/
+
+# Build logs
+build_stdout.txt
+build_stderr.txt
+
+# InnoSetup output
+Installer/Output/
+
+# Runtime data (created by the EDR at install location)
+Logs/
+Quarantine/
+Data/
+Reports/
+
+# OS junk
+Thumbs.db
+Desktop.ini
